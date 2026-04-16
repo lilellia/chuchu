@@ -1,13 +1,14 @@
 from functools import wraps
 import tkinter as tk
 
+from chuchu.theming import Style
 from chuchu.widget import TextWidget
 
 
 class Button[T](TextWidget):
     _TK_CLASS = tk.Button
 
-    def __init__(self, text: str = "", *, onclick: Callable[[], T] | None = None, **kwargs) -> None:
+    def __init__(self, text: str = "", *, onclick: Callable[[], T] | None = None,  **kwargs) -> None:
         self._onclick_return_value = None
 
         if onclick:

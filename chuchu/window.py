@@ -1,18 +1,27 @@
 import sys
 from threading import Thread
 import tkinter as tk
+from typing import override
 
 from chuchu.widget import Container
 from chuchu.ltypes import Position, Size
+from chuchu.theming import active_theme
 
 
 class Application(Container):
     def __init__(self, *, title: str = "chuchu application", size: tuple[int, int] | None = None) -> None:
         super().__init__(tkobj=tk.Tk())
+
         self.title = title
 
         if size:
             self.size = size
+
+        self.apply_style()
+
+    @override
+    def apply_style(self) -> None:
+        self.proxy("configure")(background=active_theme.window.background)
 
     @property
     def title(self) -> str:
@@ -65,6 +74,14 @@ class Application(Container):
 
         size = self.size
         self.proxy("geometry")(f"{size.width}x{size.height}+{x}+{y}")
+
+    @property
+    def theme(self) -> str:
+        return self.proxy("tk").call("ttk::style", "theme", "use")
+
+    @theme.setter
+    def theme(self, theme: str) -> None:
+        ttk.Style(self._tkobj).theme_use(theme)
 
     def run(self) -> None:
         """Run the application. This is a blocking call."""

@@ -1,4 +1,5 @@
 import tkinter as tk
+
 from chuchu.widget import TextWidget
 
 class Textbox(TextWidget):

@@ -3,6 +3,8 @@ import itertools
 import tkinter as tk
 from typing import Any, NamedTuple
 
+from chuchu.theming import Style, active_theme
+
 
 def clone_tk_widget(tkobj, master=None):
     """
@@ -37,10 +39,25 @@ def clone_tk_widget(tkobj, master=None):
 
 
 class Widget:
-    def __init__(self, *, tkobj, **kwargs) -> None:
+    def __init__(self, *, tkobj, style: str | None = None, **kwargs) -> None:
         self._tkobj = tkobj
+        self.style = style
         for k, v in kwargs.items():
             setattr(self, k, v)
+
+    def apply_style(self) -> None:
+        if self.style is None:
+            return
+
+        style = active_theme.get_style(self.style)
+
+        self.proxy("configure")(
+            bg=style.background,
+            fg=style.foreground,
+            activebackground=style.active,
+            border=0,
+            relief=style.relief,
+        )
 
     def proxy(self, attr: str) -> Any:
         """Proxy the lookup of the given attribute onto the underlying tkinter object."""
@@ -64,7 +81,7 @@ class Container(Widget):
         super().__init__(tkobj=tkobj, **kwargs)
         self._grid = []
 
-    def grid(self, widgets: Iterable[Iterable[Widget]], *, columns: int | None = None, weights: Iterable[Iterable[int]] | None = None) -> None:
+    def grid(self, widgets: Iterable[Iterable[Widget]], *, columns: int | None = None, weights: Iterable[Iterable[int]] | None = None, **kwargs) -> None:
         if weights is None:
             weights = itertools.repeat(itertools.repeat(1))
 
@@ -82,21 +99,24 @@ class Container(Widget):
                     row = [GridNode(widget, weight)]
                     allocated = weight
 
-        if row:
-            self._grid.append(row)
+            if row:
+                self._grid.append(row)
 
-        self._update_grid()
+        kwargs = {"padx": 5, "pady": 5, "sticky": "nsew", **kwargs}
+        self._update_grid(**kwargs)
 
-    def add_row(self, widgets: Iterable[Widget], *, columns: int | None = None, weights: Iterable[int] | None = None) -> None:
-        self.grid([widgets], columns=columns, weights=[weights] if weights else None)
+    def add_row(self, widgets: Iterable[Widget], *, columns: int | None = None, weights: Iterable[int] | None = None, **kwargs) -> None:
+        self.grid([widgets], columns=columns, weights=[weights] if weights else None, **kwargs)
 
-    def _update_grid(self) -> None:
+    def _update_grid(self, **kwargs) -> None:
         for y, row in enumerate(self._grid):
             x = 0
             for node in row:
                 if node.widget is not None:
-                    w = clone_tk_widget(node.widget._tkobj, master=self._tkobj)
-                    w.grid(row=y, column=x, columnspan=node.weight)
+                    w = node.widget._tkobj = clone_tk_widget(node.widget._tkobj, master=self._tkobj)
+                    node.widget.apply_style()
+                    w.grid(row=y, column=x, columnspan=node.weight, **kwargs)
+
 
                 x += node.weight
 
