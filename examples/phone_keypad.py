@@ -24,7 +24,6 @@ def main():
         Button("*", onclick=lambda: print(box), style="secondary")         # Textbox also implements .__str__
     ])
 
-    print(app.theme)
     app.run()
 
 
