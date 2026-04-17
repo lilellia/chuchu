@@ -1,23 +1,27 @@
-from abc import ABC, abstractproperty, abstractmethod
-from collections.abc import Iterable
+from __future__ import annotations
+from abc import ABC, abstractmethod
+from collections.abc import Callable, Iterable
 from collections import ChainMap
 from functools import wraps
 import itertools
 import tkinter as tk
 from tkinter import ttk
-from typing import Any, NamedTuple
+from typing import Any, NamedTuple, TypeVar, cast
 
-from chuchu.theming import Style, active_theme
+from chuchu.theming import active_theme
+
+
+T = TypeVar("T")
 
 
 class TkConstructorInfo(NamedTuple):
-    cls: type[tk.Widget] | type[ttk.Widget]
+    cls: type[tk.Tk] | type[tk.Widget] | type[ttk.Widget]
     kwargs: dict[str, Any]
 
 
 class Widget:
-    def __init__(self, *, constructor_info: TkConstructorInfo, style: str | None = None, **kwargs) -> None:
-        self._tkobj: tk.Widget | ttk.Widget | None = None
+    def __init__(self, *, constructor_info: TkConstructorInfo, style: str | None = None, **kwargs: Any) -> None:
+        self._tkobj: tk.Tk | tk.Widget | ttk.Widget | None = None
         self._constructor_info = constructor_info
         self._config_buffer: dict[str, Any] = {}
         self._lookup = ChainMap(constructor_info.kwargs, self._config_buffer)
@@ -30,8 +34,15 @@ class Widget:
     def is_bound(self) -> bool:
         return self._tkobj is not None
 
-    def bind(self, master: Container | None, **kwargs) -> None:
-        self._tkobj = self._constructor_info.cls(master._tkobj if master else None, **{**self._lookup, **kwargs})
+    def bind(self, master: Container | None, **kwargs: Any) -> None:
+        kw = {**self._lookup, **kwargs}
+        if (cls := self._constructor_info.cls) == tk.Tk:
+            self._tkobj = tk.Tk(**kw)
+        else:
+            assert master is not None
+            assert master._tkobj is not None
+            self._tkobj = cls(master._tkobj, **kw)  # type: ignore[arg-type]
+
         self._config_buffer.clear()
 
     def apply_style(self) -> None:
@@ -54,7 +65,7 @@ class Widget:
             return self._lookup[field]
 
         try:
-            return self._tkobj.cget(field)
+            return self._tkobj.cget(field)  # type: ignore[union-attr]
         except tk.TclError:
             raise KeyError(field)
 
@@ -69,7 +80,7 @@ class Widget:
             self._config_buffer.update(**kwargs)
             return
 
-        self._tkobj.configure(**kwargs)
+        self._tkobj.configure(**kwargs)  # type: ignore[union-attr]
 
     def bind_onchange(self, onchange: Callable[[T], Any]) -> None:
         @wraps(onchange)
@@ -91,11 +102,18 @@ class GridNode(NamedTuple):
 
 
 class Container(Widget):
-    def __init__(self, *, constructor_info: TkConstructorInfo, **kwargs) -> None:
+    def __init__(self, *, constructor_info: TkConstructorInfo, **kwargs: Any) -> None:
         super().__init__(constructor_info=constructor_info, **kwargs)
-        self._grid = []
+        self._grid: list[list[GridNode]] = []
 
-    def grid(self, widgets: Iterable[Iterable[Widget]], *, columns: int | None = None, weights: Iterable[Iterable[int]] | None = None, **kwargs) -> None:
+    def grid(
+        self,
+        widgets: Iterable[Iterable[Widget]],
+        *,
+        columns: int | None = None,
+        weights: Iterable[Iterable[int]] | None = None,
+        **kwargs: Any,
+    ) -> None:
         if weights is None:
             weights = itertools.repeat(itertools.repeat(1))
 
@@ -119,12 +137,20 @@ class Container(Widget):
         kwargs = {"padx": 5, "pady": 5, "sticky": "nsew", **kwargs}
         self._update_grid(**kwargs)
 
-    def add_row(self, widgets: Iterable[Widget], *, columns: int | None = None, weights: Iterable[int] | None = None, **kwargs) -> None:
+    def add_row(
+        self,
+        widgets: Iterable[Widget],
+        *,
+        columns: int | None = None,
+        weights: Iterable[int] | None = None,
+        **kwargs: Any,
+    ) -> None:
         self.grid([widgets], columns=columns, weights=[weights] if weights else None, **kwargs)
 
-    def _update_grid(self, **kwargs) -> None:
+    def _update_grid(self, **kwargs: Any) -> None:
         max_columns = 0
         for y, row in enumerate(self._grid):
+            assert self._tkobj is not None
             self._tkobj.rowconfigure(y, weight=1)
             x = 0
             for node in row:
@@ -132,27 +158,35 @@ class Container(Widget):
                     if not node.widget.is_bound:
                         node.widget.bind(self)
 
+                    assert node.widget._tkobj is not None
                     node.widget.apply_style()
-                    node.widget._tkobj.grid(row=y, column=x, columnspan=node.weight, **kwargs)
-
+                    w = cast(tk.Widget | ttk.Widget, node.widget._tkobj)
+                    w.grid(row=y, column=x, columnspan=node.weight, **kwargs)
 
                 x += node.weight
                 max_columns = max(max_columns, x)
 
         for i in range(max_columns):
+            assert self._tkobj is not None
             self._tkobj.columnconfigure(i, weight=1)
 
 
 class TWidget(ABC):
+    _TK_CLASS: type[ttk.Widget]
+
     @property
     def style_key_template(self) -> str:
         return f"{{id}}.T{self._TK_CLASS.__name__}"
 
-    def apply_ttk_style(self, **kwargs) -> None:
+    def apply_ttk_style(self, **kwargs: Any) -> None:
         key = self.style_key_template.format(id=id(self))
 
         ttk.Style().configure(key, **kwargs)
         self.tkset(style=key)
+
+    @abstractmethod
+    def tkset(self, **kwargs: Any) -> None:
+        pass
 
     @abstractmethod
     def apply_style(self) -> None:
@@ -162,14 +196,15 @@ class TWidget(ABC):
 class TextWidget(Widget):
     _TK_CLASS: type[tk.Widget]
 
-    def __init__(self, text: str = "", *, tk_kwargs: dict[str, Any] | None = None, **kwargs) -> None:
+    def __init__(self, text: str = "", *, tk_kwargs: dict[str, Any] | None = None, **kwargs: Any) -> None:
         info = TkConstructorInfo(cls=self._TK_CLASS, kwargs={"text": text, **(tk_kwargs or {})})
         super().__init__(constructor_info=info, **kwargs)
         self._text = text
 
-    def bind(self, master: Container) -> None:
+    def bind(self, master: Container | None, **kwargs: Any) -> None:
+        assert master is not None
         self._var = tk.StringVar(master._tkobj, self._text)
-        super().bind(master, textvariable=self._var)
+        super().bind(master, textvariable=self._var, **kwargs)
 
     @property
     def text(self) -> str:

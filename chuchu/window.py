@@ -1,7 +1,12 @@
+from collections.abc import Callable
 import sys
-from threading import Thread
 import tkinter as tk
-from typing import override, ParamSpec, TypeVar
+from typing import ParamSpec, TypeVar, cast
+
+if sys.version_info >= (3, 12):
+    from typing import override
+else:
+    from typing_extensions import override
 
 from chuchu.widget import Container, TkConstructorInfo
 from chuchu.ltypes import Position, Size
@@ -24,9 +29,9 @@ class Application(Container):
 
         self.apply_style()
 
-    def dispatch(self, func: Callable[P, R], *args: P.args, after: float = 0.0, **kwargs: P.kwargs) -> None:
+    def dispatch(self, func: Callable[P, R], after: float = 0.0, *args: P.args, **kwargs: P.kwargs) -> None:
         """Schedule a thread-safe call of the function to run on the main thread after `after` seconds."""
-        self._tkobj.after(round(1000 * after), lambda: func(*args, **kwargs))
+        cast(tk.Tk, self._tkobj).after(round(1000 * after), lambda: func(*args, **kwargs))
 
     @override
     def apply_style(self) -> None:
@@ -35,7 +40,7 @@ class Application(Container):
     @property
     def title(self) -> str:
         """Get the window title."""
-        return self._tkobj.title()
+        return cast(tk.Tk, self._tkobj).title()
 
     @title.setter
     def title(self, title: str) -> None:
@@ -43,12 +48,12 @@ class Application(Container):
         if not isinstance(title, str):
             raise TypeError(f"window title should be a string, not {title!r}")
 
-        self._tkobj.title(title)
+        cast(tk.Tk, self._tkobj).title(title)
 
     @property
     def size(self) -> Size:
         """Get the current window size, in the form Size(width=500, height=750)."""
-        g = self._tkobj.geometry()
+        g = cast(tk.Tk, self._tkobj).geometry()
 
         # g = "200x200+860+430" (WxH+X+Y)
         width, height = g.split("+")[0].split("x")
@@ -62,12 +67,12 @@ class Application(Container):
         except ValueError:
             raise ValueError(f"Window size must be interpretable as (int, int), not {size!r}")
 
-        self._tkobj.geometry(f"{width}x{height}")
+        cast(tk.Tk, self._tkobj).geometry(f"{width}x{height}")
 
     @property
     def position(self) -> Position:
         """Return the current window position, in the form Position(x=100, y=300)."""
-        g = self._tkobj.geometry()
+        g = cast(tk.Tk, self._tkobj).geometry()
 
         # g = "200x200+860+430" (WxH+X+Y)
         x, y = g.split("+", maxsplit=1)[1].split("+")
@@ -82,16 +87,8 @@ class Application(Container):
             raise ValueError(f"Window position must be interpretable as (int, int), not {pos!r}")
 
         size = self.size
-        self._tkobj.geometry(f"{size.width}x{size.height}+{x}+{y}")
-
-    @property
-    def theme(self) -> str:
-        return self._tkobj.tk.call("ttk::style", "theme", "use")
-
-    @theme.setter
-    def theme(self, theme: str) -> None:
-        ttk.Style(self._tkobj).theme_use(theme)
+        cast(tk.Tk, self._tkobj).geometry(f"{size.width}x{size.height}+{x}+{y}")
 
     def run(self) -> None:
         """Run the application. This is a blocking call."""
-        self._tkobj.mainloop()
+        cast(tk.Tk, self._tkobj).mainloop()

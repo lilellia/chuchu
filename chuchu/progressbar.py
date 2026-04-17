@@ -1,14 +1,24 @@
+from collections.abc import Callable, Iterable
 from contextlib import suppress
-from concurrent.futures import ThreadPoolExecutor, Future, as_completed
-from collections.abc import Iterable, Iterator
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import sys
 import tkinter as tk
 from threading import Thread
 from tkinter import ttk
-from typing import override
+from typing import Any, Literal, TypeVar, cast
 
-from chuchu.widget import TkConstructorInfo, TWidget, Widget
+if sys.version_info >= (3, 12):
+    from typing import override
+else:
+    from typing_extensions import override
+
+
+from chuchu.widget import TkConstructorInfo, TWidget, Widget, Container
 from chuchu.theming import active_theme
 from chuchu.window import Application
+
+
+T = TypeVar("T")
 
 
 class ProgressBar(Widget, TWidget):
@@ -24,14 +34,14 @@ class ProgressBar(Widget, TWidget):
         value: float = 0.0,
         style: str = "primary",
         onchange: Callable[[float], Any] | None = None,
-        **kwargs
+        **kwargs: Any,
     ) -> None:
         tk_kwargs = {
             "orient": "horizontal" if horizontal else "vertical",
             "length": length,
             "mode": "determinate" if determinate else "indeterminate",
             "maximum": maximum,
-            "value": value
+            "value": value,
         }
 
         kwargs = {
@@ -48,8 +58,8 @@ class ProgressBar(Widget, TWidget):
         super().__init__(constructor_info=info, **kwargs)
         self._value = value
 
-    @override
     @property
+    @override
     def style_key_template(self) -> str:
         return f"{{id}}.{self.orientation.capitalize()}.TProgressbar"
 
@@ -65,11 +75,13 @@ class ProgressBar(Widget, TWidget):
             troughcolor=active_theme.window.background,
             bordercolor=active_theme.window.background,
             darkcolor=style.background,
-            lightcolor=style.background
+            lightcolor=style.background,
         )
 
     @override
-    def bind(self, master: Container) -> None:
+    def bind(self, master: Container | None, **kwargs: Any) -> None:
+        if master is None:
+            raise ValueError("ProgressBar master cannot be None")
         self._var = tk.DoubleVar(master._tkobj)
         super().bind(master, variable=self._var)
         if self.onchange:
@@ -92,9 +104,9 @@ class ProgressBar(Widget, TWidget):
     @property
     def orientation(self) -> Literal["horizontal", "vertical"]:
         try:
-            return str(self.tkget("orient"))
+            return cast(Literal["horizontal", "vertical"], str(self.tkget("orient")))
         except KeyError:
-            return "horizontal" if self.horizontal else "vertical"
+            return "horizontal" if self.horizontal else "vertical"  # type: ignore[attr-defined]
 
     @property
     def onchange(self) -> Callable[[float], Any] | None:
@@ -103,24 +115,33 @@ class ProgressBar(Widget, TWidget):
     @onchange.setter
     def onchange(self, onchange: Callable[[float], Any] | None, /) -> None:
         self._onchange = onchange
-        self.bind_onchange(onchange)
+        if onchange:
+            self.bind_onchange(onchange)
 
     def start(self, tick_ms: int = 50) -> None:
-        self._tkobj.start(tick_ms)
+        if not self.is_bound:
+            raise RuntimeError("Cannot start progress bar until it's been rendered")
+
+        cast(ttk.Progressbar, self._tkobj).start(tick_ms)
 
     def stop(self) -> None:
-        self._tkobj.stop()
+        if not self.is_bound:
+            raise RuntimeError("Cannot stop progress bar until it's been rendered")
+
+        cast(ttk.Progressbar, self._tkobj).stop()
 
     def step(self, amount: float = 1.0) -> None:
-        if (val := self.value + amount) >= (max := self.tkget("maximum")):
+        if self.value + amount >= (max := self.tkget("maximum")):
             self.value = max
         else:
-            self._tkobj.step(amount)
+            self.value += amount
 
-    def monitor_progress[T](self, ctx: Application, items: Iterable[T], func: Callable[[T], Any], *, total: int | None = None) -> None:
+    def monitor_progress(
+        self, ctx: Application, items: Iterable[T], func: Callable[[T], Any], *, total: int | None = None
+    ) -> None:
         n: int | None = None
         with suppress(TypeError):
-            n = len(items)
+            n = len(items)  # type: ignore[arg-type]
 
         if total is not None:
             n = total

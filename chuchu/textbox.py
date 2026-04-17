@@ -1,15 +1,18 @@
+from collections.abc import Callable
 import tkinter as tk
+from typing import Any
 
 from chuchu.widget import TextWidget
+
 
 class Textbox(TextWidget):
     _TK_CLASS = tk.Entry
 
-    def __init__(self, text: str = "", *, validator: Callable[[str], bool] | None = None, **kwargs) -> None:
+    def __init__(self, text: str = "", *, validator: Callable[[str], bool] | None = None, **kwargs: Any) -> None:
         super().__init__(text=text, validator=validator, **kwargs)
 
     def write(self, text: str) -> int:
-        """Write the given text to the end of the contents of the textbox, returning the number of characters written."""
+        """Write the given text to the end of the textbox, returning the number of characters written."""
         if not isinstance(text, str):
             raise TypeError(f"Textbox.write argument should be a string, not {text!r}")
 
@@ -21,7 +24,10 @@ class Textbox(TextWidget):
         self.text = ""
 
     def backspace(self) -> str:
-        """Remove the final character of the textbox, returning it. If the textbox is already empty, return the empty string."""
+        """
+        Remove the final character of the textbox, returning it.
+        If the textbox is already empty, return the empty string.
+        """
         if not self.text:
             return ""
 
