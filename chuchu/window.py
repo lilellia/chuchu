@@ -3,14 +3,15 @@ from threading import Thread
 import tkinter as tk
 from typing import override
 
-from chuchu.widget import Container
+from chuchu.widget import Container, TkConstructorInfo
 from chuchu.ltypes import Position, Size
 from chuchu.theming import active_theme
 
 
 class Application(Container):
     def __init__(self, *, title: str = "chuchu application", size: tuple[int, int] | None = None) -> None:
-        super().__init__(tkobj=tk.Tk())
+        super().__init__(constructor_info=TkConstructorInfo(cls=tk.Tk, kwargs={}))
+        self.bind(None)
 
         self.title = title
 
@@ -21,12 +22,12 @@ class Application(Container):
 
     @override
     def apply_style(self) -> None:
-        self.proxy("configure")(background=active_theme.window.background)
+        self.tkset(background=active_theme.window.background)
 
     @property
     def title(self) -> str:
         """Get the window title."""
-        return self.proxy("title")()
+        return self._tkobj.title()
 
     @title.setter
     def title(self, title: str) -> None:
@@ -34,12 +35,12 @@ class Application(Container):
         if not isinstance(title, str):
             raise TypeError(f"window title should be a string, not {title!r}")
 
-        self.proxy("title")(title)
+        self._tkobj.title(title)
 
     @property
     def size(self) -> Size:
         """Get the current window size, in the form Size(width=500, height=750)."""
-        g = self.proxy("geometry")()
+        g = self._tkobj.geometry()
 
         # g = "200x200+860+430" (WxH+X+Y)
         width, height = g.split("+")[0].split("x")
@@ -53,12 +54,12 @@ class Application(Container):
         except ValueError:
             raise ValueError(f"Window size must be interpretable as (int, int), not {size!r}")
 
-        self.proxy("geometry")(f"{width}x{height}")
+        self._tkobj.geometry(f"{width}x{height}")
 
     @property
     def position(self) -> Position:
         """Return the current window position, in the form Position(x=100, y=300)."""
-        g = self.proxy("geometry")()
+        g = self._tkobj.geometry()
 
         # g = "200x200+860+430" (WxH+X+Y)
         x, y = g.split("+", maxsplit=1)[1].split("+")
@@ -73,11 +74,11 @@ class Application(Container):
             raise ValueError(f"Window position must be interpretable as (int, int), not {pos!r}")
 
         size = self.size
-        self.proxy("geometry")(f"{size.width}x{size.height}+{x}+{y}")
+        self._tkobj.geometry(f"{size.width}x{size.height}+{x}+{y}")
 
     @property
     def theme(self) -> str:
-        return self.proxy("tk").call("ttk::style", "theme", "use")
+        return self._tkobj.tk.call("ttk::style", "theme", "use")
 
     @theme.setter
     def theme(self, theme: str) -> None:
@@ -85,4 +86,4 @@ class Application(Container):
 
     def run(self) -> None:
         """Run the application. This is a blocking call."""
-        self.proxy("mainloop")()
+        self._tkobj.mainloop()

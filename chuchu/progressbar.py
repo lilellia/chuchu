@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from typing import override
 
-from chuchu.widget import TWidget, Widget, clone_tk_widget
+from chuchu.widget import TkConstructorInfo, TWidget, Widget
 from chuchu.theming import active_theme
 
 
@@ -17,7 +17,10 @@ class ProgressBar(Widget, TWidget):
             "maximum": maximum,
             "value": value
         }
-        super().__init__(tkobj=self._TK_CLASS(None, **tk_kwargs), horizontal=horizontal, length=length, determinate=determinate, maximum=maximum, value=value, style=style)
+
+        info = TkConstructorInfo(cls=self._TK_CLASS, kwargs=tk_kwargs)
+        super().__init__(constructor_info=info, horizontal=horizontal, length=length, determinate=determinate, maximum=maximum, value=value, style=style)
+        self._value = value
 
     @override
     def style_key_template(self) -> str:
@@ -25,7 +28,7 @@ class ProgressBar(Widget, TWidget):
 
     @override
     def apply_style(self) -> None:
-        if self.style is None:
+        if not self.is_bound or self.style is None:
             return
 
         style = active_theme.get_style(self.style)
@@ -40,21 +43,27 @@ class ProgressBar(Widget, TWidget):
 
     @property
     def value(self) -> float:
-        return self.tkget("value")
+        return self.tkget_or("value", default=self._value)
 
     @value.setter
     def value(self, value: float) -> None:
-        self.proxy("configure")(value=value)
+        if self.is_bound:
+            self.tkset(value=value)
+
+        self._value = value
 
     @property
     def orientation(self) -> Literal["horizontal", "vertical"]:
-        return str(self.tkget("orient"))
+        try:
+            return str(self.tkget("orient"))
+        except KeyError:
+            return "horizontal" if self.horizontal else "vertical"
 
     def start(self, tick_ms: int = 50) -> None:
-        self.proxy("start")(tick_ms)
+        self._tkobj.start(tick_ms)
 
     def stop(self) -> None:
-        self.proxy("stop")()
+        self._tkobj.stop()
 
     def step(self, amount: float = 1.0) -> None:
-        self.proxy("step")(amount)
+        self._tkobj.step(amount)
