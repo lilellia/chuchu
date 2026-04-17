@@ -109,7 +109,9 @@ class Container(Widget):
         self.grid([widgets], columns=columns, weights=[weights] if weights else None, **kwargs)
 
     def _update_grid(self, **kwargs) -> None:
+        max_columns = 0
         for y, row in enumerate(self._grid):
+            self.proxy("rowconfigure")(y, weight=1)
             x = 0
             for node in row:
                 if node.widget is not None:
@@ -119,7 +121,10 @@ class Container(Widget):
 
 
                 x += node.weight
+                max_columns = max(max_columns, x)
 
+        for i in range(max_columns):
+            self.proxy("columnconfigure")(i, weight=1)
 
 class TextWidget(Widget):
     _TK_CLASS: type[tk.Widget]
