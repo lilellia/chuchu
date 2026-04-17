@@ -6,6 +6,7 @@ from .widget import Widget, Container, TextWidget
 from .button import Button
 from .label import Label
 from .progressbar import ProgressBar
+from .slider import Slider
 from .textbox import Textbox
 from .window import Application
 
