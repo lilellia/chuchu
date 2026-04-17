@@ -1,8 +1,10 @@
 from abc import ABC, abstractproperty, abstractmethod
 from collections.abc import Iterable
 from collections import ChainMap
+from functools import wraps
 import itertools
 import tkinter as tk
+from tkinter import ttk
 from typing import Any, NamedTuple
 
 from chuchu.theming import Style, active_theme
@@ -68,6 +70,19 @@ class Widget:
             return
 
         self._tkobj.configure(**kwargs)
+
+    def bind_onchange(self, onchange: Callable[[T], Any]) -> None:
+        @wraps(onchange)
+        def wrapper(*_: Any) -> Any:
+            if not hasattr(self, "_var"):
+                self._onchange_return_value = None
+                return None
+
+            v = self._onchange_return_value = onchange(self._var.get())
+            return v
+
+        if hasattr(self, "_var"):
+            self._var.trace_add("write", wrapper)
 
 
 class GridNode(NamedTuple):

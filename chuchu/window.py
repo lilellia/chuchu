@@ -1,11 +1,15 @@
 import sys
 from threading import Thread
 import tkinter as tk
-from typing import override
+from typing import override, ParamSpec, TypeVar
 
 from chuchu.widget import Container, TkConstructorInfo
 from chuchu.ltypes import Position, Size
 from chuchu.theming import active_theme
+
+
+P = ParamSpec("P")
+R = TypeVar("R")
 
 
 class Application(Container):
@@ -19,6 +23,10 @@ class Application(Container):
             self.size = size
 
         self.apply_style()
+
+    def dispatch(self, func: Callable[P, R], *args: P.args, after: float = 0.0, **kwargs: P.kwargs) -> None:
+        """Schedule a thread-safe call of the function to run on the main thread after `after` seconds."""
+        self._tkobj.after(round(1000 * after), lambda: func(*args, **kwargs))
 
     @override
     def apply_style(self) -> None:
