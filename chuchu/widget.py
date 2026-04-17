@@ -1,3 +1,4 @@
+from abc import ABC, abstractproperty, abstractmethod
 from collections.abc import Iterable
 import itertools
 import tkinter as tk
@@ -125,6 +126,23 @@ class Container(Widget):
 
         for i in range(max_columns):
             self.proxy("columnconfigure")(i, weight=1)
+
+
+class TWidget(ABC):
+    @property
+    def style_key_template(self) -> str:
+        return f"{{id}}.T{self._TK_CLASS.__name__}"
+
+    def apply_ttk_style(self, **kwargs) -> None:
+        key = self.style_key_template.format(id=id(self))
+
+        ttk.Style().configure(key, **kwargs)
+        self.proxy("configure")(style=key)
+
+    @abstractmethod
+    def apply_style(self) -> None:
+        pass
+
 
 class TextWidget(Widget):
     _TK_CLASS: type[tk.Widget]

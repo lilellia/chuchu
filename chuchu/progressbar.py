@@ -2,11 +2,11 @@ import tkinter as tk
 from tkinter import ttk
 from typing import override
 
-from chuchu.widget import Widget, clone_tk_widget
+from chuchu.widget import TWidget, Widget, clone_tk_widget
 from chuchu.theming import active_theme
 
 
-class ProgressBar(Widget):
+class ProgressBar(Widget, TWidget):
     _TK_CLASS = ttk.Progressbar
 
     def __init__(self, *, horizontal: bool = True, length: float = 100.0, determinate: bool = True, maximum: float = 100.0, value: float = 0.0, style: str = "primary", **kwargs) -> None:
@@ -20,26 +20,23 @@ class ProgressBar(Widget):
         super().__init__(tkobj=self._TK_CLASS(None, **tk_kwargs), horizontal=horizontal, length=length, determinate=determinate, maximum=maximum, value=value, style=style)
 
     @override
+    def style_key_template(self) -> str:
+        return f"{{id}}.{self.orientation.capitalize()}.TProgressbar"
+
+    @override
     def apply_style(self) -> None:
         if self.style is None:
             return
 
         style = active_theme.get_style(self.style)
 
-        s = ttk.Style()
-
-        key = f"{id(self)}.{self.orientation.capitalize()}.T{self._TK_CLASS.__name__}"
-        s.configure(
-            key,
+        self.apply_ttk_style(
             background=style.background,
             troughcolor=active_theme.window.background,
             bordercolor=active_theme.window.background,
             darkcolor=style.background,
             lightcolor=style.background
         )
-
-
-        self.proxy("configure")(style=key)
 
     @property
     def value(self) -> float:
