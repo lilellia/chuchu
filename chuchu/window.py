@@ -1,4 +1,4 @@
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 import sys
 import tkinter as tk
 from typing import ParamSpec, TypeVar, cast
@@ -8,9 +8,12 @@ if sys.version_info >= (3, 12):
 else:
     from typing_extensions import override
 
-from chuchu.widget import Container, TkConstructorInfo
+from chuchu.frame import Frame
+from chuchu.label import StatusBar
 from chuchu.ltypes import Position, Size
+from chuchu.menu import MenuBar
 from chuchu.theming import active_theme
+from chuchu.widget import Container, TkConstructorInfo
 
 
 P = ParamSpec("P")
@@ -18,7 +21,13 @@ R = TypeVar("R")
 
 
 class Application(Container):
-    def __init__(self, *, title: str = "chuchu application", size: tuple[int, int] | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        title: str = "chuchu application",
+        size: tuple[int, int] | None = None,
+        status: str | None = None,
+    ) -> None:
         super().__init__(constructor_info=TkConstructorInfo(cls=tk.Tk, kwargs={}))
         self.bind(None)
 
@@ -27,15 +36,56 @@ class Application(Container):
         if size:
             self.size = size
 
+        # create the status bar
+        self._status_bar: StatusBar | None = None
+        self.status = status
+
+        # create the general background frame
+        self._frame = Frame()
+        self._frame.bind(self)
+        self._frame._tkobj.pack(side="top", fill="both", expand=True)
+
         self.apply_style()
 
     def dispatch(self, func: Callable[P, R], after: float = 0.0, *args: P.args, **kwargs: P.kwargs) -> None:
         """Schedule a thread-safe call of the function to run on the main thread after `after` seconds."""
         cast(tk.Tk, self._tkobj).after(round(1000 * after), lambda: func(*args, **kwargs))
 
+    def set_menubar(self, layout: dict[str, dict[str, Callable[[], Any]] | None]) -> MenuBar:
+        menubar = MenuBar(layout)
+        menubar.bind(self)
+        return menubar
+
+    @override
+    def grid(
+        self,
+        widgets: Iterable[Iterable[Widget]],
+        *,
+        columns: int | None = None,
+        weights: Iterable[Iterable[int]] | None = None,
+        **kwargs: Any
+    ) -> Iterable[Iterable[Widget]]:
+        return self._frame.grid(widgets, columns=columns, weights=weights, **kwargs)
+
+    @override
+    def add_row(
+        self,
+        widgets: Iterable[Widget],
+        *,
+        columns: int | None = None,
+        weights: Iterable[int] | None = None,
+        **kwargs: Any,
+    ) -> Iterable[Widget]:
+        return self._frame.add_row(widgets, columns=columns, weights=weights, **kwargs)
+
+    @override
+    def form(self, widget_map: Mapping[str, Widget], *, weights: tuple[int, int] | None = None) -> None:
+        return self._frame.form(widget_map, weights=weights)
+
     @override
     def apply_style(self) -> None:
         self.tkset(background=active_theme.window.background)
+        self._frame.apply_style()
 
     @property
     def title(self) -> str:
@@ -89,6 +139,35 @@ class Application(Container):
         size = self.size
         cast(tk.Tk, self._tkobj).geometry(f"{size.width}x{size.height}+{x}+{y}")
 
+    @property
+    def status(self) -> str | None:
+        return self._status
+
+    @status.setter
+    def status(self, value: str | None, /) -> None:
+        match (value, self._status_bar):
+            case [None, None]:
+                # there wasn't a status bar and we still don't want one
+                pass
+
+            case [None, sb]:
+                # there was a status bar, but we don't want one now
+                sb.forget()
+
+            case [status, None]:
+                # there wasn't a status bar, but now we want one
+                self._status_bar = StatusBar(f"{status}  ")
+
+                self._status_bar.bind(self)
+                self._status_bar.apply_style()
+
+            case [status, sb]:
+                # just update the status
+                sb.text = f"{status}  "
+
     def run(self) -> None:
         """Run the application. This is a blocking call."""
         cast(tk.Tk, self._tkobj).mainloop()
+
+    def quit(self) -> None:
+        self._tkobj.destroy()

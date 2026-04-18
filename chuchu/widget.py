@@ -1,6 +1,6 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Mapping
 from collections import ChainMap
 from functools import wraps
 import itertools
@@ -51,13 +51,7 @@ class Widget:
 
         style = active_theme.get_style(self.style)
 
-        self.tkset(
-            bg=style.background,
-            fg=style.foreground,
-            activebackground=style.active,
-            border=0,
-            relief=style.relief,
-        )
+        self.tkset(**style.tkdict())
 
     def tkget(self, field: str) -> Any:
         """Query the underlying tkinter object for the given field. If the field is unknown, raise KeyError."""
@@ -105,6 +99,11 @@ class Container(Widget):
     def __init__(self, *, constructor_info: TkConstructorInfo, **kwargs: Any) -> None:
         super().__init__(constructor_info=constructor_info, **kwargs)
         self._grid: list[list[GridNode]] = []
+        self._form: dict[str, Widget] = {}
+
+    def __getitem__(self, key: str) -> Widget:
+        """Return a reference to the widget that was added as a form element with the given key."""
+        return self._form[key]
 
     def grid(
         self,
@@ -113,7 +112,7 @@ class Container(Widget):
         columns: int | None = None,
         weights: Iterable[Iterable[int]] | None = None,
         **kwargs: Any,
-    ) -> None:
+    ) -> Iterable[Iterable[Widget]]:
         if weights is None:
             weights = itertools.repeat(itertools.repeat(1))
 
@@ -136,6 +135,7 @@ class Container(Widget):
 
         kwargs = {"padx": 5, "pady": 5, "sticky": "nsew", **kwargs}
         self._update_grid(**kwargs)
+        return widgets
 
     def add_row(
         self,
@@ -144,8 +144,18 @@ class Container(Widget):
         columns: int | None = None,
         weights: Iterable[int] | None = None,
         **kwargs: Any,
-    ) -> None:
+    ) -> Iterable[Widget]:
         self.grid([widgets], columns=columns, weights=[weights] if weights else None, **kwargs)
+        return widgets
+
+    def form(self, widget_map: Mapping[str, Widget], *, weights: tuple[int, int] | None = None) -> None:
+        if weights is None:
+            weights = (1, 1)
+
+        for key, widget in widget_map.items():
+            label = self._form[f"{key}-label"] = Label(key)
+            self._form[key] = widget
+            self.add_row((label, widget), columns=2, weights=weights)
 
     def _update_grid(self, **kwargs: Any) -> None:
         max_columns = 0
@@ -225,6 +235,14 @@ class TextWidget(Widget):
             self._var.set(text)
 
         self._text = text
+
+    @property
+    def value(self) -> str:
+        return self.text
+
+    @value.setter
+    def value(self, value: str, /) -> None:
+        self.text = value
 
     def __str__(self) -> str:
         return self.text

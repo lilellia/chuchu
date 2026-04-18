@@ -12,9 +12,20 @@ def hsl(hue: float, saturation: float, lightness: float) -> str:
 @dataclass
 class Style:
     background: str
-    active: str
     foreground: str
+    active_background: str
+    active_foreground: str
     relief: Literal["flat", "raised"]
+
+    def tkdict(self) -> dict[str, str]:
+        return dict(
+            bg=self.background,
+            fg=self.foreground,
+            activebackground=self.active_background,
+            activeforeground=self.active_foreground,
+            border=0,
+            relief=self.relief,
+        )
 
 
 @dataclass
@@ -31,17 +42,25 @@ class Theme:
 THEMES = {
     "default": Theme(
         name="default",
-        window=Style(foreground="#a0a0a0", active="#000000", background="#101010", relief="flat"),
+        window=Style(
+            foreground="#a0a0a0",
+            background="#101010",
+            active_background="#080808",
+            active_foreground="#a0a0a0",
+            relief="flat"
+        ),
         primary=Style(
             foreground="#000000",
             background=hsl(200, 1.0, 0.5),
-            active=hsl(200, 1.0, 0.3),
+            active_background=hsl(200, 1.0, 0.3),
+            active_foreground="#000000",
             relief="flat",
         ),
         secondary=Style(
             foreground="#000000",
             background=hsl(60, 1.0, 0.5),
-            active=hsl(60, 1.0, 0.3),
+            active_background=hsl(60, 1.0, 0.3),
+            active_foreground="#000000",
             relief="flat",
         ),
     )

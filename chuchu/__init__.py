@@ -3,6 +3,7 @@ from .widget import Widget, Container, TextWidget
 
 # "concrete" widgets
 from .button import Button
+from .checkbox import Checkbox
 from .label import Label
 from .progressbar import ProgressBar
 from .slider import Slider
@@ -18,6 +19,7 @@ __all__ = [
     "Container",
     "TextWidget",
     "Button",
+    "Checkbox"
     "Label",
     "ProgressBar",
     "Slider",
