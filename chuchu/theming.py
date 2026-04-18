@@ -1,6 +1,6 @@
 import colorsys
 from dataclasses import dataclass
-from typing import Literal, cast
+from typing import Any, Literal, cast
 
 
 def hsl(hue: float, saturation: float, lightness: float) -> str:
@@ -17,7 +17,7 @@ class Style:
     active_foreground: str
     relief: Literal["flat", "raised"]
 
-    def tkdict(self) -> dict[str, str]:
+    def tkdict(self) -> dict[str, Any]:
         return dict(
             bg=self.background,
             fg=self.foreground,

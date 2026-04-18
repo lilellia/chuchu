@@ -19,7 +19,7 @@ __all__ = [
     "Container",
     "TextWidget",
     "Button",
-    "Checkbox"
+    "Checkbox",
     "Label",
     "ProgressBar",
     "Slider",

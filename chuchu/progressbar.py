@@ -2,7 +2,6 @@ from collections.abc import Callable, Iterable
 from contextlib import suppress
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import sys
-import tkinter as tk
 from threading import Thread
 from tkinter import ttk
 from typing import Any, Literal, TypeVar, cast
@@ -13,7 +12,7 @@ else:
     from typing_extensions import override
 
 
-from chuchu.widget import TkConstructorInfo, TWidget, Widget, Container
+from chuchu.widget import TWidget, DynamicWidget
 from chuchu.theming import active_theme
 from chuchu.window import Application
 
@@ -21,14 +20,19 @@ from chuchu.window import Application
 T = TypeVar("T")
 
 
-class ProgressBar(Widget, TWidget):
+class ProgressBar(TWidget, DynamicWidget[float]):
     _TK_CLASS = ttk.Progressbar
+
+    _horizontal: bool
+    length: int
+    maximum: float
+    determinate: bool
 
     def __init__(
         self,
         *,
         horizontal: bool = True,
-        length: float = 100.0,
+        length: int = 100,
         determinate: bool = True,
         maximum: float = 100.0,
         value: float = 0.0,
@@ -45,7 +49,7 @@ class ProgressBar(Widget, TWidget):
         }
 
         kwargs = {
-            "horizontal": horizontal,
+            "_horizontal": horizontal,
             "length": length,
             "determinate": determinate,
             "maximum": maximum,
@@ -54,8 +58,7 @@ class ProgressBar(Widget, TWidget):
             "onchange": onchange,
         }
 
-        info = TkConstructorInfo(cls=self._TK_CLASS, kwargs=tk_kwargs)
-        super().__init__(constructor_info=info, **kwargs)
+        super().__init__(tk_kwargs=tk_kwargs, **kwargs)
         self._value = value
 
     @property
@@ -78,45 +81,12 @@ class ProgressBar(Widget, TWidget):
             lightcolor=style.background,
         )
 
-    @override
-    def bind(self, master: Container | None, **kwargs: Any) -> None:
-        if master is None:
-            raise ValueError("ProgressBar master cannot be None")
-        self._var = tk.DoubleVar(master._tkobj)
-        super().bind(master, variable=self._var)
-        if self.onchange:
-            self.bind_onchange(self.onchange)
-
-    @property
-    def value(self) -> float:
-        if self.is_bound:
-            return self._var.get()
-
-        return self._value
-
-    @value.setter
-    def value(self, value: float) -> None:
-        if self.is_bound:
-            self._var.set(value)
-
-        self._value = value
-
     @property
     def orientation(self) -> Literal["horizontal", "vertical"]:
         try:
             return cast(Literal["horizontal", "vertical"], str(self.tkget("orient")))
         except KeyError:
             return "horizontal" if self.horizontal else "vertical"  # type: ignore[attr-defined]
-
-    @property
-    def onchange(self) -> Callable[[float], Any] | None:
-        return self._onchange
-
-    @onchange.setter
-    def onchange(self, onchange: Callable[[float], Any] | None, /) -> None:
-        self._onchange = onchange
-        if onchange:
-            self.bind_onchange(onchange)
 
     def start(self, tick_ms: int = 50) -> None:
         if not self.is_bound:

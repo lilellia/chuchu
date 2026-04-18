@@ -1,23 +1,28 @@
 from collections.abc import Callable
 from functools import wraps
 import sys
-import tkinter as tk
 from tkinter import ttk
-from typing import Any, TypeVar, cast
+from typing import Any, TypeVar
 
 if sys.version_info >= (3, 12):
     from typing import override
 else:
     from typing_extensions import override
 
-from chuchu.widget import TkConstructorInfo, TWidget, Widget, Container
+from chuchu.widget import TWidget, DynamicWidget
 
 
 T = TypeVar("T")
 
 
-class Slider(Widget, TWidget):
+class Slider(DynamicWidget[float], TWidget):
     _TK_CLASS = ttk.Scale
+
+    minimum: float
+    maximum: float
+    resolution: float
+    horizontal: bool
+    length: int
 
     def __init__(
         self,
@@ -49,23 +54,15 @@ class Slider(Widget, TWidget):
         if onchange:
 
             @wraps(onchange)
-            def wrapper(_: float) -> T:
+            def wrapper(_: float) -> Any:
                 value = self._lock_to_resolution()
                 res = self._onchange_return_value = onchange(value)
                 return res
 
             tk_kwargs["command"] = kwargs["onchange"] = wrapper
 
-        info = TkConstructorInfo(cls=self._TK_CLASS, kwargs=tk_kwargs)
-        super().__init__(constructor_info=info, style=style, **kwargs)
+        super().__init__(tk_kwargs=tk_kwargs, style=style, **kwargs)
         self._value = value
-
-    @override
-    def bind(self, master: Container | None, **kwargs: Any) -> None:
-        if master is None:
-            raise ValueError("Slider master cannot be None")
-        self._var = tk.DoubleVar(master._tkobj, self._value)
-        super().bind(master, variable=self._var)
 
     @override
     def apply_style(self) -> None:
@@ -73,29 +70,25 @@ class Slider(Widget, TWidget):
 
     @property
     def value(self) -> float:
-        if self.is_bound:
-            return self._var.get()
-
-        return self._value
+        return super().value
 
     @value.setter
     def value(self, value: float) -> None:
-        value = max(self.minimum, min(value, self.maximum))  # type: ignore[attr-defined]
+        value = max(self.minimum, min(value, self.maximum))
 
-        if self.is_bound:
+        if self._var:
             self._var.set(value)
-        else:
-            self._value = value
+
+        self._value = value
 
         self._lock_to_resolution()
 
     def _lock_to_resolution(self, *_: Any) -> float:
-        steps = round((self.value - self.minimum) / self.resolution)  # type: ignore[attr-defined]
-        value = self.minimum + steps * self.resolution  # type: ignore[attr-defined]
+        steps = round((self.value - self.minimum) / self.resolution)
+        value = self.minimum + steps * self.resolution
 
-        if self.is_bound:
+        if self._var:
             self._var.set(value)
-        else:
-            self._value = value
 
-        return cast(float, value)
+        self._value = value
+        return value

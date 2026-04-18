@@ -1,38 +1,52 @@
+from __future__ import annotations
 from collections.abc import Callable
+import sys
 import tkinter as tk
-from typing import Any, override
+from typing import Any, Protocol, cast
+
+if sys.version_info >= (3, 12):
+    from typing import override
+else:
+    from typing_extensions import override
+
 
 from chuchu.theming import active_theme
-from chuchu.widget import Widget, Container, TkConstructorInfo
+from chuchu.widget import Widget, Container
+
+
+class TkMenu(Protocol):
+    def add_cascade(self, label: str, menu: TkMenu) -> None: ...
+    def add_command(self, label: str, command: Callable[[], Any] | None) -> None: ...
+    def add_separator(self) -> None: ...
+
 
 class MenuBar(Widget):
     _TK_CLASS = tk.Menu
 
     def __init__(
         self,
-        layout: dict[str, dict[str, Callable[[], Any]] | None],
+        layout: dict[str, dict[str, Callable[[], Any] | None]],
         style: str = "window",
         **kwargs: Any
     ) -> None:
         self.layout = layout
 
-        # this largely gets ignored since MenuBar.bind's override
-        # handles the construction on its own rather than deferring
-        info = TkConstructorInfo(cls=self._TK_CLASS, kwargs={})
-
-        super().__init__(constructor_info=info, style=style, **kwargs)
+        super().__init__(tk_kwargs={}, style=style, **kwargs)
 
     @override
     def bind(self, master: Container | None, **kwargs: Any) -> Any:
         if master is None:
-            raise ValueError("MenuBar master cannot be None")
+            raise TypeError("MenuBar master cannot be None")
 
-        self._tkobj = self._TK_CLASS(master._tkobj)
+        if master._tkobj is None:
+            raise ValueError(f"MenuBar cannot be bound to master {master!r} which is not yet bound.")
+
+        self._tkobj = cast(TkMenu, self._TK_CLASS(master._tkobj))  # type: ignore[assignment]
 
         for key, sublayout in self.layout.items():
             # create a new submenu bound to this menubar
-            submenu = self._TK_CLASS(self._tkobj, tearoff=0)
-            self._tkobj.add_cascade(label=key, menu=submenu)
+            submenu = cast(TkMenu, self._TK_CLASS(self._tkobj, tearoff=0))
+            cast(TkMenu, self._tkobj).add_cascade(label=key, menu=submenu)
 
             # bind the individual options to this new submenu
             for subkey, command in sublayout.items():
@@ -53,5 +67,6 @@ class MenuBar(Widget):
 
         style = active_theme.get_style(self.style)
 
+        assert self._tkobj is not None
         for tkobj in (self._tkobj, *self._tkobj.winfo_children()):
             tkobj.configure(**style.tkdict())

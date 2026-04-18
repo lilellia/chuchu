@@ -1,7 +1,7 @@
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 import sys
 import tkinter as tk
-from typing import ParamSpec, TypeVar, cast
+from typing import Any, ParamSpec, TypeVar, cast
 
 if sys.version_info >= (3, 12):
     from typing import override
@@ -10,10 +10,10 @@ else:
 
 from chuchu.frame import Frame
 from chuchu.label import StatusBar
-from chuchu.ltypes import Position, Size
+from chuchu.ltypes import Tk, Position, Size
 from chuchu.menu import MenuBar
 from chuchu.theming import active_theme
-from chuchu.widget import Container, TkConstructorInfo
+from chuchu.widget import Container, Widget
 
 
 P = ParamSpec("P")
@@ -21,6 +21,11 @@ R = TypeVar("R")
 
 
 class Application(Container):
+    _TK_CLASS = Tk
+
+    _status_bar: StatusBar | None = None
+    _status: str | None = None
+
     def __init__(
         self,
         *,
@@ -28,7 +33,7 @@ class Application(Container):
         size: tuple[int, int] | None = None,
         status: str | None = None,
     ) -> None:
-        super().__init__(constructor_info=TkConstructorInfo(cls=tk.Tk, kwargs={}))
+        super().__init__(style="window", tk_kwargs={})
         self.bind(None)
 
         self.title = title
@@ -37,13 +42,12 @@ class Application(Container):
             self.size = size
 
         # create the status bar
-        self._status_bar: StatusBar | None = None
         self.status = status
 
         # create the general background frame
         self._frame = Frame()
         self._frame.bind(self)
-        self._frame._tkobj.pack(side="top", fill="both", expand=True)
+        cast(tk.Frame, self._frame._tkobj).pack(side="top", fill="both", expand=True)
 
         self.apply_style()
 
@@ -51,10 +55,10 @@ class Application(Container):
         """Schedule a thread-safe call of the function to run on the main thread after `after` seconds."""
         cast(tk.Tk, self._tkobj).after(round(1000 * after), lambda: func(*args, **kwargs))
 
-    def set_menubar(self, layout: dict[str, dict[str, Callable[[], Any]] | None]) -> MenuBar:
-        menubar = MenuBar(layout)
-        menubar.bind(self)
-        return menubar
+    def set_menubar(self, layout: dict[str, dict[str, Callable[[], Any] | None]]) -> MenuBar:
+        self._menubar = MenuBar(layout)
+        self._menubar.bind(self)
+        return self._menubar
 
     @override
     def grid(
@@ -90,7 +94,7 @@ class Application(Container):
     @property
     def title(self) -> str:
         """Get the window title."""
-        return cast(tk.Tk, self._tkobj).title()
+        return self._root.title()
 
     @title.setter
     def title(self, title: str) -> None:
@@ -98,12 +102,12 @@ class Application(Container):
         if not isinstance(title, str):
             raise TypeError(f"window title should be a string, not {title!r}")
 
-        cast(tk.Tk, self._tkobj).title(title)
+        self._root.title(title)
 
     @property
     def size(self) -> Size:
         """Get the current window size, in the form Size(width=500, height=750)."""
-        g = cast(tk.Tk, self._tkobj).geometry()
+        g = self._root.geometry()
 
         # g = "200x200+860+430" (WxH+X+Y)
         width, height = g.split("+")[0].split("x")
@@ -117,12 +121,12 @@ class Application(Container):
         except ValueError:
             raise ValueError(f"Window size must be interpretable as (int, int), not {size!r}")
 
-        cast(tk.Tk, self._tkobj).geometry(f"{width}x{height}")
+        self._root.geometry(f"{width}x{height}")
 
     @property
     def position(self) -> Position:
         """Return the current window position, in the form Position(x=100, y=300)."""
-        g = cast(tk.Tk, self._tkobj).geometry()
+        g = self._root.geometry()
 
         # g = "200x200+860+430" (WxH+X+Y)
         x, y = g.split("+", maxsplit=1)[1].split("+")
@@ -137,7 +141,7 @@ class Application(Container):
             raise ValueError(f"Window position must be interpretable as (int, int), not {pos!r}")
 
         size = self.size
-        cast(tk.Tk, self._tkobj).geometry(f"{size.width}x{size.height}+{x}+{y}")
+        self._root.geometry(f"{size.width}x{size.height}+{x}+{y}")
 
     @property
     def status(self) -> str | None:
@@ -152,7 +156,8 @@ class Application(Container):
 
             case [None, sb]:
                 # there was a status bar, but we don't want one now
-                sb.forget()
+                assert sb is not None
+                cast(tk.Label, sb._tkobj).forget()
 
             case [status, None]:
                 # there wasn't a status bar, but now we want one
@@ -165,9 +170,13 @@ class Application(Container):
                 # just update the status
                 sb.text = f"{status}  "
 
+    @property
+    def _root(self) -> tk.Tk:
+        return cast(tk.Tk, self._tkobj)
+
     def run(self) -> None:
         """Run the application. This is a blocking call."""
-        cast(tk.Tk, self._tkobj).mainloop()
+        self._root.mainloop()
 
     def quit(self) -> None:
-        self._tkobj.destroy()
+        self._root.destroy()

@@ -1,30 +1,40 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from collections.abc import Callable, Iterable, Mapping
-from collections import ChainMap
+from collections.abc import Callable, Iterable, Mapping, MutableMapping
 from functools import wraps
 import itertools
+import sys
 import tkinter as tk
 from tkinter import ttk
-from typing import Any, NamedTuple, TypeVar, cast
+from typing import Any, ClassVar, Generic, NamedTuple, TypeVar, cast
 
+
+if sys.version_info >= (3, 12):
+    from typing import override
+else:
+    from typing_extensions import override
+
+
+from chuchu.label import Label
+from chuchu.ltypes import Tk, TkVar, TypeTkWidget
 from chuchu.theming import active_theme
 
 
-T = TypeVar("T")
-
-
-class TkConstructorInfo(NamedTuple):
-    cls: type[tk.Tk] | type[tk.Widget] | type[ttk.Widget]
-    kwargs: dict[str, Any]
+T = TypeVar("T", str, float, int, bool)
 
 
 class Widget:
-    def __init__(self, *, constructor_info: TkConstructorInfo, style: str | None = None, **kwargs: Any) -> None:
+    _TK_CLASS: ClassVar[TypeTkWidget]
+
+    def __init__(
+        self,
+        *,
+        style: str | None = None,
+        tk_kwargs: MutableMapping[str, Any] | None = None,
+        **kwargs: Any
+    ) -> None:
         self._tkobj: tk.Tk | tk.Widget | ttk.Widget | None = None
-        self._constructor_info = constructor_info
-        self._config_buffer: dict[str, Any] = {}
-        self._lookup = ChainMap(constructor_info.kwargs, self._config_buffer)
+        self._tk_kwargs = tk_kwargs or {}
         self.style = style
 
         for k, v in kwargs.items():
@@ -35,15 +45,23 @@ class Widget:
         return self._tkobj is not None
 
     def bind(self, master: Container | None, **kwargs: Any) -> None:
-        kw = {**self._lookup, **kwargs}
-        if (cls := self._constructor_info.cls) == tk.Tk:
-            self._tkobj = tk.Tk(**kw)
-        else:
-            assert master is not None
-            assert master._tkobj is not None
-            self._tkobj = cls(master._tkobj, **kw)  # type: ignore[arg-type]
+        self._tk_kwargs.update(kwargs)
+        clsname = self._TK_CLASS.__name__
 
-        self._config_buffer.clear()
+        if master is None:
+            if self._TK_CLASS != Tk:
+                raise TypeError(f"Instance of {clsname} must have a master object, not None.")
+
+            self._tkobj = self._TK_CLASS(**self._tk_kwargs)
+
+        else:
+            if self._TK_CLASS == Tk:
+                raise TypeError(f"Instance of {clsname} cannot have a master object.")
+
+            if master._tkobj is None:
+                raise ValueError(f"Instance of {clsname} cannot be bound to master {master!r} which is not yet bound.")
+
+            self._tkobj = self._TK_CLASS(master._tkobj, **self._tk_kwargs)
 
     def apply_style(self) -> None:
         if not self.is_bound or self.style is None:
@@ -53,41 +71,96 @@ class Widget:
 
         self.tkset(**style.tkdict())
 
-    def tkget(self, field: str) -> Any:
+    def tkget(self, field: str, default: Any = None) -> Any:
         """Query the underlying tkinter object for the given field. If the field is unknown, raise KeyError."""
-        if not self.is_bound:
-            return self._lookup[field]
+        if self._tkobj:
+            try:
+                return self._tkobj.cget(field)
+            except tk.TclError:
+                return default
 
-        try:
-            return self._tkobj.cget(field)  # type: ignore[union-attr]
-        except tk.TclError:
-            raise KeyError(field)
-
-    def tkget_or(self, field: str, default: Any = None) -> Any:
-        try:
-            return self.tkget(field)
-        except Exception:
-            return default
+        return self._tk_kwargs.get(field, default)
 
     def tkset(self, **kwargs: Any) -> None:
-        if not self.is_bound:
-            self._config_buffer.update(**kwargs)
+        if self._tkobj:
+            self._tkobj.configure(**kwargs)
             return
 
-        self._tkobj.configure(**kwargs)  # type: ignore[union-attr]
+        self._tk_kwargs.update(**kwargs)
 
-    def bind_onchange(self, onchange: Callable[[T], Any]) -> None:
-        @wraps(onchange)
-        def wrapper(*_: Any) -> Any:
-            if not hasattr(self, "_var"):
-                self._onchange_return_value = None
-                return None
+    def defer_set(self, **kwargs: Any) -> Callable[[], None]:
+        def _set() -> None:
+            self.tkset(**kwargs)
 
-            v = self._onchange_return_value = onchange(self._var.get())
-            return v
+        return _set
 
-        if hasattr(self, "_var"):
+
+class DynamicWidget(Widget, Generic[T]):
+    _TKVAR_CLASS: ClassVar[type[TkVar[Any]]]
+    _TKVAR_NAME: ClassVar[str] = "variable"
+
+    _var: TkVar[T] | None
+    _value: T
+
+    _onchange: Callable[[T], Any] | None
+    _onchange_return_value: Any = None
+
+    @property
+    def value(self) -> T:
+        if self._var:
+            return self._var.get()
+
+        return self._value
+
+    @value.setter
+    def value(self, value: T, /) -> None:
+        if self._var:
+            self._var.set(value)
+
+        self._value = value
+
+    @property
+    def onchange(self) -> Callable[[T], Any] | None:
+        return self._onchange
+
+    @onchange.setter
+    def onchange(self, func: Callable[[T], Any] | None, /) -> None:
+        if self._var:
+            # remove any existing trace on the variable
+            for mode, cb_name in self._var.trace_info():
+                if "write" in mode:
+                    self._var.trace_remove("write", cb_name)
+
+        if not func:
+            self._onchange = None
+            return
+
+        @wraps(func)
+        def wrapper(*_: str) -> Any:
+            res = self._onchange_return_value = func(self.value)
+            return res
+
+        if self._var:
             self._var.trace_add("write", wrapper)
+
+        self._onchange = func
+
+    @override
+    def bind(self, master: Container | None, **kwargs: Any) -> None:
+        if master is None:
+            raise TypeError(f"None is not a valid bind target for {type(self).__name__} variable")
+
+        if master._tkobj is None:
+            raise ValueError(f"Cannot bind variable of {type(self).__name__} to unbound parent {master!r}")
+
+        self._var = self._TKVAR_CLASS(master._tkobj, self.value)
+        kwargs[self._TKVAR_NAME] = self._var
+        super().bind(master, **kwargs)
+
+        # This looks silly, but if an onchange was registered, it won't be hooked into the trace yet,
+        # so we do this to force that hook to be made.
+        if self._onchange:
+            self.onchange = self._onchange
 
 
 class GridNode(NamedTuple):
@@ -96,8 +169,8 @@ class GridNode(NamedTuple):
 
 
 class Container(Widget):
-    def __init__(self, *, constructor_info: TkConstructorInfo, **kwargs: Any) -> None:
-        super().__init__(constructor_info=constructor_info, **kwargs)
+    def __init__(self, *, style: str | None = None, tk_kwargs: MutableMapping[str, Any] | None, **kwargs: Any) -> None:
+        super().__init__(style=style, tk_kwargs=tk_kwargs, **kwargs)
         self._grid: list[list[GridNode]] = []
         self._form: dict[str, Widget] = {}
 
@@ -181,9 +254,7 @@ class Container(Widget):
             self._tkobj.columnconfigure(i, weight=1)
 
 
-class TWidget(ABC):
-    _TK_CLASS: type[ttk.Widget]
-
+class TWidget(Widget, ABC):
     @property
     def style_key_template(self) -> str:
         return f"{{id}}.T{self._TK_CLASS.__name__}"
@@ -195,54 +266,37 @@ class TWidget(ABC):
         self.tkset(style=key)
 
     @abstractmethod
-    def tkset(self, **kwargs: Any) -> None:
-        pass
-
-    @abstractmethod
     def apply_style(self) -> None:
         pass
 
 
-class TextWidget(Widget):
-    _TK_CLASS: type[tk.Widget]
+class TextWidget(DynamicWidget[str]):
+    _TKVAR_CLASS = tk.StringVar
+    _TKVAR_NAME = "textvariable"
 
-    def __init__(self, text: str = "", *, tk_kwargs: dict[str, Any] | None = None, **kwargs: Any) -> None:
-        info = TkConstructorInfo(cls=self._TK_CLASS, kwargs={"text": text, **(tk_kwargs or {})})
-        super().__init__(constructor_info=info, **kwargs)
+    def __init__(
+        self,
+        text: str = "",
+        *,
+        style: str | None = None,
+        tk_kwargs: MutableMapping[str, Any] | None = None,
+        **kwargs: Any
+    ) -> None:
+        if tk_kwargs is None:
+            tk_kwargs = {}
+
+        tk_kwargs.setdefault("text", text)
+
+        super().__init__(style=style, tk_kwargs=tk_kwargs, **kwargs)
         self._text = text
-
-    def bind(self, master: Container | None, **kwargs: Any) -> None:
-        assert master is not None
-        self._var = tk.StringVar(master._tkobj, self._text)
-        super().bind(master, textvariable=self._var, **kwargs)
 
     @property
     def text(self) -> str:
-        if self.is_bound:
-            return self._var.get()
-
-        return self._text
+        return self.value
 
     @text.setter
     def text(self, text: str, /) -> None:
-        if not isinstance(text, str):
-            raise TypeError(f"{type(self).__name__}.text should be a string, not {text!r}")
-
-        if (validator := getattr(self, "validator", None)) and not validator(text):
-            raise ValueError(f"{text=} is not a valid value for this textbox: {validator.__name__}")
-
-        if self.is_bound:
-            self._var.set(text)
-
-        self._text = text
-
-    @property
-    def value(self) -> str:
-        return self.text
-
-    @value.setter
-    def value(self, value: str, /) -> None:
-        self.text = value
+        self.value = text
 
     def __str__(self) -> str:
         return self.text

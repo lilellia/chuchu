@@ -1,9 +1,16 @@
+import sys
 import tkinter as tk
 import tkinter.font
-from typing import override
+from tkinter import ttk
+from typing import Any
+
+if sys.version_info >= (3, 12):
+    from typing import override
+else:
+    from typing_extensions import override
 
 from chuchu.theming import active_theme
-from chuchu.widget import TextWidget
+from chuchu.widget import Container, TextWidget
 
 
 class Label(TextWidget):
@@ -38,10 +45,17 @@ class StatusBar(Label):
 
     @override
     def bind(self, master: Container | None, **kwargs: Any) -> None:
+        if master is None:
+            raise TypeError("StatusBar master cannot be None")
+
+        if master._tkobj is None:
+            raise ValueError(f"StatusBar cannot be bound to master {master!r} which is not yet bound.")
+
         if not isinstance(master._tkobj, tk.Tk):
             raise ValueError("StatusBar master must be root window")
 
         super().bind(master, **kwargs)
 
         # immediately draw onto the parent
+        assert isinstance(self._tkobj, (tk.Widget | ttk.Widget))
         self._tkobj.pack(side="bottom", fill="x", anchor="e", ipady=2)

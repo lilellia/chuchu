@@ -8,36 +8,37 @@ from chuchu import Application, Label
 def main() -> None:
     app = Application(title="Menu Demonstration", size=(500, 200), status="no command yet")
 
-    def update(label: Label, text: str) -> None:
+    label = Label("no command yet")
+    app.add_row([label])
+
+    def update(text: str) -> None:
         label.text = text
         app.status = f"Status: {text}"
 
-    (label,) = app.add_row([Label("no command yet")])
-
-    menu = app.set_menubar({
+    app.set_menubar({
         "File": {
-            "New File": lambda: update(label, "new file"),
-            "Open...": lambda: update(label, "open"),
-            "Save": lambda: update(label, "save"),
+            "New File": lambda: update(text="new file"),
+            "Open...": lambda: update(text="open"),
+            "Save": lambda: update(text="save"),
             "---": None,  # separator: key doesn't matter, just that the value is None
             "Exit": app.quit
         },
 
         "Edit": {
-            "Cut": lambda: update(label, "cut"),
-            "Copy": lambda: update(label, "copy"),
-            "Paste": lambda: update(label, "paste"),
-            "Select All": lambda: update(label, "select all"),
+            "Cut": lambda: update(text="cut"),
+            "Copy": lambda: update(text="copy"),
+            "Paste": lambda: update(text="paste"),
+            "Select All": lambda: update(text="select all"),
             "---": None,
-            "Find": lambda: update(label, "find"),
-            "Replace": lambda: update(label, "replace")
+            "Find": lambda: update(text="find"),
+            "Replace": lambda: update(text="replace")
         },
 
         "Help": {
-            "chuchu help": lambda: update(label, "chuchu help"),
-            "demo": lambda: update(label, "demo"),
+            "chuchu help": lambda: update(text="chuchu help"),
+            "demo": lambda: update(text="demo"),
             "---": None,
-            "about chuchu": lambda: update(label, "about chuchu")
+            "about chuchu": lambda: update(text="about chuchu")
         }
     })
 
