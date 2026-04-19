@@ -1,4 +1,4 @@
-from collections.abc import Iterable, MutableMapping
+from collections.abc import Callable, Iterable, MutableMapping
 import sys
 import tkinter as tk
 from typing import Any
@@ -46,6 +46,7 @@ class Dropdown(DynamicWidget[str]):
         style: str | None = "default",
         multiselect: bool = False,
         tk_kwargs: MutableMapping[str, Any] | None = None,
+        onchange: Callable[[str], Any] | None = None,
         **kwargs: Any,
     ) -> None:
         # initial assignments to ensure attributes are always set
@@ -59,6 +60,7 @@ class Dropdown(DynamicWidget[str]):
             options=options,
             selected=selected or [],
             blank_text=blank_text,
+            onchange=onchange,
             **kwargs,
         )
 

@@ -1,41 +1,14 @@
 # CHANGELOG
 
-## v0.2.9
+## v0.2.\*
 
-- Allow `DynamicWidget[T]` to skip binding the underlying `tk.Variable`
-
-## v0.2.8
-
-- Corrects access of `Dropdown._varmap`.
-
-## v0.2.7
-
-- `Dropdown.__init__` now takes `selected: Iterable[str] | None = None` instead of `value: str = ""`.
-
-## v0.2.6
-
-- Corrects access of `Dropdown.multiselect`.
-
-## v0.2.5
-
-- Reverts `TextWidget` move and instead moves `Label` into `widget.py`.
-
-## v0.2.4
-
-- Re-adds `onchange` support to `Button`.
-- Fixes import cycling by moving `TextWidget` to its own file.
-
-## v0.2.3
-
-- Attempts to fix import cycling.
-
-## v0.2.2
-
-- Correctly exports Dropdown and Frame.
-
-## v0.2.1
-
-- Fixes `* > TextWidget > DynamicWidget` inheritance.
+- Allow `DynamicWidget[T]` to skip binding the underlying `tk.Variable` (v0.2.9).
+- Corrects access of `Dropdown._onchange` (v0.2.10), `Dropdown._varmap` (v0.2.8), `Dropdown.multiselect` (v0.2.6)
+- `Dropdown.__init__` now takes `selected: Iterable[str] | None = None` instead of `value: str = ""` (v0.2.7).
+- Re-adds `onchange` support on `Button` (v0.2.4).
+- Fixes import cycling between `Container` and `Label` (v0.2.5).
+- Fixes `* > TextWidget > DynamicWidget` inheritance (v0.2.1).
+- Correctly exports `Dropdown` and `Frame` (v0.2.2).
 
 ## v0.2.0
 
