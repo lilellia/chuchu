@@ -1,16 +1,21 @@
 # CHANGELOG
 
+## v0.2.4
+
+- Re-adds `onchange` support to `Button`.
+- Fixes import cycling by moving `TextWidget` to its own file.
+
 ## v0.2.3
 
-- Fix import cycling
+- Attempts to fix import cycling.
 
 ## v0.2.2
 
-- Correctly exports Dropdown and Frame
+- Correctly exports Dropdown and Frame.
 
 ## v0.2.1
 
-- Fixes `* > TextWidget > DynamicWidget` inheritance
+- Fixes `* > TextWidget > DynamicWidget` inheritance.
 
 ## v0.2.0
 
