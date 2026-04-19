@@ -35,7 +35,7 @@ class Dropdown(DynamicWidget[str]):
     # {option: var}
     # When multiselect=True, each key will point to a unique StringVar;
     # When multiselect=False, every will point to the same StringVar
-    _varmap: dict[str, tk.StringVar]
+    _varmap: dict[str, TkVar[str]]
 
     def __init__(
         self,
@@ -43,7 +43,7 @@ class Dropdown(DynamicWidget[str]):
         *,
         blank_text: str = "Select ▾",
         selected: Iterable[str] | None = None,
-        style: str | None = "default",
+        style: str | None = None,
         multiselect: bool = False,
         tk_kwargs: MutableMapping[str, Any] | None = None,
         onchange: Callable[[str], Any] | None = None,

@@ -34,7 +34,7 @@ class Slider(DynamicWidget[float], TWidget):
         horizontal: bool = True,
         length: int = 100,
         onchange: Callable[[float], T] | None = None,
-        style: str | None = "default",
+        style: str | None = None,
     ) -> None:
         tk_kwargs: dict[str, Any] = {
             "from_": minimum,
