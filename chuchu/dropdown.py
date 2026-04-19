@@ -10,6 +10,7 @@ else:
     from typing_extensions import override
 
 
+from chuchu.ltypes import TkVar
 from chuchu.widget import Container, DynamicWidget
 
 
@@ -146,6 +147,11 @@ class Dropdown(DynamicWidget[str]):
             pass
 
     @property
+    def _first_tk_var(self) -> TkVar[str] | None:
+        vars = iter(self._varmap.values())
+        return next(vars, None)
+
+    @property
     def blank_text(self) -> str:
         return self._blank_text
 
@@ -162,7 +168,7 @@ class Dropdown(DynamicWidget[str]):
             # We'll return any option whose variable is set (== "1")
             return tuple(opt for opt, var in self._varmap.items() if var.get() == "1")
 
-        if (var := next(iter(self._varmap.values()), None)) is not None:
+        if (var := self._first_tk_var) is not None:
             # This weird next(iter(...), None) is just a safety in case there aren't any options.
             # If any options exist, there's only one var object since this is the select-one situation,
             # so we'll just return whatever option it's pointing to.
@@ -192,12 +198,9 @@ class Dropdown(DynamicWidget[str]):
             if len(selected) > 1:
                 raise ValueError("Cannot select multiple options for a select-one dropdown.")
 
-            if (var := next(iter(self._varmap.values()))) is not None:
+            if (var := self._first_tk_var) is not None:
                 # We know that `selected` only has at most one element, so we can safely .pop() to get it uniquely.
                 var.set(selected.pop() if selected else "")
-
-            # There must not be any options, so...
-            var.set("")
 
     @property
     @override
