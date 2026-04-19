@@ -53,6 +53,8 @@ class Dropdown(DynamicWidget[str]):
         self._multiselect = False
         self._varmap = {}
 
+        self._value = ""
+
         super().__init__(
             tk_kwargs=tk_kwargs,
             style=style,
@@ -212,7 +214,31 @@ class Dropdown(DynamicWidget[str]):
     @property
     @override
     def value(self) -> str:
-        return super().value
+        return self._parse_value()
+
+    def _parse_value(self) -> str:
+        if self.multiselect:
+            return ", ".join(self.selected) or ""
+        else:
+            return self.selected[0] if self.selected else ""
+
+    def _set_value(self, value: str, /, warn: bool = False, set_selected: bool = False) -> None:
+        if warn and (have_commas := [opt for opt in self.options if "," in opt]):
+            msg = (
+                f"Options {have_commas} have commas, so setting Dropdown.value may not work as expected. "
+                "Use Dropdown.selected = ... instead."
+            )
+            warnings.warn(msg, RuntimeWarning)
+
+        # Update the selection as well as we can.
+        if set_selected:
+            self.selected = value.split(", ")
+
+        # And update the internal variable to point to the correct string
+        self._value = self._parse_value()
+
+        if self._var:
+            self._var.set(self._value)
 
     @value.setter
     @override
@@ -222,24 +248,7 @@ class Dropdown(DynamicWidget[str]):
         # If any of the individual options contain commas, then this isn't reliable.
         # Just... feel free to *read* Dropdown.value, but *set* Dropdown.selected.
         # Dropdown.value.setter is provided purely for compliance with the DynamicWidget interface.
-        if have_commas := [opt for opt in self.options if "," in opt]:
-            msg = (
-                f"Options {have_commas} have commas, so setting Dropdown.value may not work as expected. "
-                "Use Dropdown.selected = ... instead."
-            )
-            warnings.warn(msg, RuntimeWarning)
-
-        # Update the selection as well as we can.
-        self.selected = value.split(", ")
-
-        # And update the internal variable to point to the correct string
-        if self.multiselect:
-            self._value = ", ".join(self.selected) or ""
-        else:
-            self._value = self.selected[0] if self.selected else ""
-
-        if self._var:
-            self._var.set(self._value)
+        self._set_value(value, warn=True, set_selected=True)
 
     @property
     def options(self) -> tuple[str, ...]:
