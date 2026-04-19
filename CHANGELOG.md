@@ -1,6 +1,11 @@
 # CHANGELOG
 
-## v0.1.1
+## v0.2.1
+
+- Fixes `* > TextWidget > DynamicWidget` inheritance
+- Fixes import cycling
+
+## v0.2.0
 
 - Adds widgets:
     - `Checkbox`

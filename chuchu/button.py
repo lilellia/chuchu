@@ -12,6 +12,7 @@ T = TypeVar("T")
 class Button(TextWidget):
     _TK_CLASS = tk.Button
 
+    _onchange: None = None
     _onclick: Callable[[], Any] | None
     _onclick_return_value: Any = None
 
@@ -38,7 +39,7 @@ class Button(TextWidget):
 
             tk_kwargs["command"] = wrapper
 
-        super().__init__(text=text, style=style, onclick=onclick, tk_kwargs=tk_kwargs, **kwargs)
+        super().__init__(text=text, style=style, value=text, onclick=onclick, tk_kwargs=tk_kwargs, **kwargs)
 
     @property
     def onclick(self) -> Callable[[], Any] | None:

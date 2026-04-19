@@ -6,7 +6,7 @@ import itertools
 import sys
 import tkinter as tk
 from tkinter import ttk
-from typing import Any, ClassVar, Generic, NamedTuple, TypeVar, cast
+from typing import Any, ClassVar, Generic, NamedTuple, TypeVar, cast, TYPE_CHECKING
 
 
 if sys.version_info >= (3, 12):
@@ -15,7 +15,9 @@ else:
     from typing_extensions import override
 
 
-from chuchu.label import Label
+if TYPE_CHECKING:
+    from chuchu.label import Label
+
 from chuchu.ltypes import Tk, TkVar, TypeTkWidget
 from chuchu.theming import active_theme
 
@@ -98,7 +100,7 @@ class DynamicWidget(Widget, Generic[T]):
     _TKVAR_CLASS: ClassVar[type[TkVar[Any]]]
     _TKVAR_NAME: ClassVar[str] = "variable"
 
-    _var: TkVar[T] | None
+    _var: TkVar[T] | None = None
     _value: T
 
     _onchange: Callable[[T], Any] | None

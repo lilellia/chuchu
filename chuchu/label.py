@@ -1,3 +1,4 @@
+from collections.abc import Callable
 import sys
 import tkinter as tk
 import tkinter.font
@@ -16,9 +17,25 @@ from chuchu.widget import Container, TextWidget
 class Label(TextWidget):
     _TK_CLASS = tk.Label
 
-    def __init__(self, text: str = "", *, style: str = "window", **kwargs: Any) -> None:
-        super().__init__(text=text, style=style, **kwargs)
-
+    def __init__(
+        self,
+        text: str = "",
+        *,
+        style: str = "window",
+        onchange: Callable[[str], Any] | None = None,
+        **kwargs: Any
+    ) -> None:
+        super().__init__(text=text, value=text, style=style, onchange=onchange, **kwargs)
+    
+    @property
+    def text(self) -> str:
+        return self.tkget("text")
+    
+    @text.setter
+    def text(self, text: str, /) -> None:
+        self._value = text
+        self.tkset(text=text)
+    
 
 class StatusBar(Label):
     def __init__(self, text: str = "", *, style: str = "window", **kwargs: Any) -> None:
