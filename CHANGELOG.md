@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v0.2.7
+
+- `Dropdown.__init__` now takes `selected: Iterable[str] | None = None` instead of `value: str = ""`.
+- Corrects access of `Dropdown._varmap`.
+
 ## v0.2.6
 
 - Corrects access of `Dropdown.multiselect`.

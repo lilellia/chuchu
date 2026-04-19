@@ -19,7 +19,7 @@ class Dropdown(DynamicWidget[str]):
 
     _master: Container | None = None
     _options: tuple[str, ...]
-    _multiselect: bool = False
+    _multiselect: bool
     _blank_text: str
 
     # self._tkobj will be the tk.Menubutton object
@@ -36,18 +36,22 @@ class Dropdown(DynamicWidget[str]):
         options: Iterable[str],
         *,
         blank_text: str = "Select ▾",
-        value: str | Iterable[str] = "",
+        selected: Iterable[str] | None = None,
         style: str | None = "default",
         multiselect: bool = False,
         tk_kwargs: MutableMapping[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
+        # initial assignments to ensure attributes are always set
+        self._multiselect = False
+        self._varmap = {}
+
         super().__init__(
             tk_kwargs=tk_kwargs,
             style=style,
             multiselect=multiselect,
             options=options,
-            value=value,
+            selected=selected or [],
             blank_text=blank_text,
             **kwargs,
         )
@@ -179,7 +183,7 @@ class Dropdown(DynamicWidget[str]):
         options = set(self.options)
 
         if invalid := set.difference(selected, options):
-            raise ValueError(f"Cannot select {', '.join(invalid)} as these are not valid options.")
+            raise ValueError(f"Cannot select {', '.join(invalid)!r} as these are not valid options.")
 
         if self.multiselect:
             for opt, var in self._varmap.items():
