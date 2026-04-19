@@ -1,8 +1,11 @@
 # CHANGELOG
 
+## v0.2.3
+
+- Fix import cycling
+
 ## v0.2.2
 
-- Fixes import cycling
 - Correctly exports Dropdown and Frame
 
 ## v0.2.1

@@ -13,7 +13,9 @@ else:
 from chuchu.theming import active_theme
 
 if TYPE_CHECKING:
-    from chuchu.widget import Container, TextWidget
+    from chuchu.widget import Container
+
+from chuchu.widget import TextWidget
 
 
 class Label(TextWidget):
@@ -28,16 +30,16 @@ class Label(TextWidget):
         **kwargs: Any
     ) -> None:
         super().__init__(text=text, value=text, style=style, onchange=onchange, **kwargs)
-    
+
     @property
     def text(self) -> str:
         return self.tkget("text")
-    
+
     @text.setter
     def text(self, text: str, /) -> None:
         self._value = text
         self.tkset(text=text)
-    
+
 
 class StatusBar(Label):
     def __init__(self, text: str = "", *, style: str = "window", **kwargs: Any) -> None:
