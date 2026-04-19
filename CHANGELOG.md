@@ -9,6 +9,7 @@
 - Fixes import cycling between `Container` and `Label` (v0.2.5).
 - Fixes `* > TextWidget > DynamicWidget` inheritance (v0.2.1).
 - Correctly exports `Dropdown` and `Frame` (v0.2.2).
+- Corrects default themes for `Dropdown` and `Slider` (v0.2.11).
 
 ## v0.2.0
 
