@@ -51,7 +51,15 @@ class Application(Container):
 
         self.apply_style()
 
-    def dispatch(self, func: Callable[P, R], after: float = 0.0, *args: P.args, **kwargs: P.kwargs) -> None:
+    #                | this type ignore is because mypy won't allow arguments after P.args
+    #                ↓ but `after` fundamentally doesn't belong to `func`, so... :shrug:
+    def dispatch(  # type: ignore[valid-type]
+        self,
+        func: Callable[P, R],
+        *args: P.args,
+        after: float = 0.0,
+        **kwargs: P.kwargs
+    ) -> None:
         """Schedule a thread-safe call of the function to run on the main thread after `after` seconds."""
         cast(tk.Tk, self._tkobj).after(round(1000 * after), lambda: func(*args, **kwargs))
 

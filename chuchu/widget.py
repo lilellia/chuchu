@@ -133,7 +133,7 @@ class DynamicWidget(Widget, Generic[T]):
             # remove any existing trace on the variable
             # as long as it's not protected
             for mode, cb_name in self._var.trace_info():
-                if self._protected_onchange_cb_names and cb_name in self._protected_onchange_cb_names:
+                if self._protected_onchange_cb and cb_name in self._protected_onchange_cb:
                     continue
 
                 if "write" in mode:

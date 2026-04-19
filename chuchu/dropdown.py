@@ -1,5 +1,4 @@
 from collections.abc import Iterable, MutableMapping
-import itertools
 import sys
 import tkinter as tk
 from typing import Any
@@ -11,7 +10,7 @@ else:
     from typing_extensions import override
 
 
-from chuchu.widget import DynamicWidget
+from chuchu.widget import Container, DynamicWidget
 
 
 class Dropdown(DynamicWidget[str]):
@@ -55,7 +54,7 @@ class Dropdown(DynamicWidget[str]):
         )
 
     @override
-    def bind(self, master: Container | None, **kwargs) -> None:
+    def bind(self, master: Container | None, **kwargs: Any) -> None:
         if master is None:
             raise TypeError(f"{type(self).__name__} master cannot be None")
 
@@ -81,10 +80,12 @@ class Dropdown(DynamicWidget[str]):
         else:
             # We already have the elements instantiated, so we just need to reconfigure them
             # In this case, we'll remove all of the elements from the menu since we're about to rebuild them
+            assert self._tkmenu is not None
             self._tkmenu.delete(0, tk.END)
             self._varmap.clear()
 
             # We also need to unbind the update-button-text trace
+            assert self._protected_onchange_cb is not None
             for cb_name, var in self._protected_onchange_cb.items():
                 var.trace_remove("write", cb_name)
 
@@ -94,16 +95,17 @@ class Dropdown(DynamicWidget[str]):
         def _update(*_: str) -> None:
             self.tkset(text=self.value)
 
-            # This looks silly, but it force-updates self._var, which will also trigger self.onchange
-            # We use super().value to avoid the comma warning.
-            super().value = self.value
+            # Force-update self._var/self._value and trigger the onchange.
+            if self._var:
+                self._var.set(self.value)
+            self._value = self.value
 
         # Add all of the options to the menu
         if self.multiselect:
             for opt in self.options:
                 # We'll use StringVar with "0" or "1" just because it means we don't need to use IntVar in this case
                 var = self._varmap[opt] = tk.StringVar(self._tkmenu, "0")
-                self._tkmenu.add_checkbutton(text=opt, variable=var, offvalue="0", onvalue="1")
+                self._tkmenu.add_checkbutton(label=opt, variable=var, offvalue="0", onvalue="1")
 
                 cbname = var.trace_add("write", _update)
                 self._protected_onchange_cb[cbname] = var
@@ -112,7 +114,7 @@ class Dropdown(DynamicWidget[str]):
             cbname = var.trace_add("write", _update)
             for opt in self.options:
                 self._varmap[opt] = var
-                self._tkmenu.add_radiobutton(text=opt, variable=var, value=opt)
+                self._tkmenu.add_radiobutton(label=opt, variable=var, value=opt)
 
         self.tkset(**self._tk_kwargs)
 
@@ -194,14 +196,14 @@ class Dropdown(DynamicWidget[str]):
             # There must not be any options, so...
             var.set("")
 
-    @override
     @property
+    @override
     def value(self) -> str:
         return super().value
 
 
-    @override
     @value.setter
+    @override
     def value(self, value: str, /) -> None:
         # This gets a bit hard since what you *really* want to be setting is Dropdown.selected.
         # dropdown.value should be a string, but we need to parse it out to be a list of options.
@@ -209,19 +211,23 @@ class Dropdown(DynamicWidget[str]):
         # Just... feel free to *read* Dropdown.value, but *set* Dropdown.selected.
         # Dropdown.value.setter is provided purely for compliance with the DynamicWidget interface.
         if (have_commas := [opt for opt in self.options if "," in opt]):
-            warnings.warn(
-                f"Options {have_commas} have commas, so setting Dropdown.value may not work as expected. Use Dropdown.selected = ... instead.",
-                RuntimeWarning
+            msg = (
+                f"Options {have_commas} have commas, so setting Dropdown.value may not work as expected. "
+                "Use Dropdown.selected = ... instead."
             )
+            warnings.warn(msg, RuntimeWarning)
 
         # Update the selection as well as we can.
         self.selected = value.split(", ")
 
         # And update the internal variable to point to the correct string
         if self.multiselect:
-            super().value = ", ".join(self.selected) or ""
+            self._value = ", ".join(self.selected) or ""
         else:
-            super().value = self.selected[0] if self.selected else ""
+            self._value = self.selected[0] if self.selected else ""
+
+        if self._var:
+            self._var.set(self._value)
 
     @property
     def options(self) -> tuple[str, ...]:
