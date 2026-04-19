@@ -84,7 +84,6 @@ class Widget:
     def tkset(self, **kwargs: Any) -> None:
         if self._tkobj:
             self._tkobj.configure(**kwargs)
-            return
 
         self._tk_kwargs.update(**kwargs)
 
@@ -104,6 +103,11 @@ class DynamicWidget(Widget, Generic[T]):
 
     _onchange: Callable[[T], Any] | None
     _onchange_return_value: Any = None
+
+    # {cb_name: var}
+    # This is a dict mapping callback names to the variable that is tracing them.
+    # As these are internal/protected callbacks, the usual onchange property won't touch them.
+    _protected_onchange_cb: dict[str, tk.Variable] | None = None
 
     @property
     def value(self) -> T:
@@ -127,7 +131,11 @@ class DynamicWidget(Widget, Generic[T]):
     def onchange(self, func: Callable[[T], Any] | None, /) -> None:
         if self._var:
             # remove any existing trace on the variable
+            # as long as it's not protected
             for mode, cb_name in self._var.trace_info():
+                if self._protected_onchange_cb_names and cb_name in self._protected_onchange_cb_names:
+                    continue
+
                 if "write" in mode:
                     self._var.trace_remove("write", cb_name)
 
