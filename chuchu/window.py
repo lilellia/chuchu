@@ -9,7 +9,7 @@ else:
     from typing_extensions import override
 
 from chuchu.frame import Frame
-from chuchu.label import StatusBar
+from chuchu.statusbar import StatusBar
 from chuchu.ltypes import Tk, Position, Size
 from chuchu.menu import MenuBar
 from chuchu.theming import active_theme
@@ -59,8 +59,8 @@ class Application(Container):
         self,
         func: Callable[P, R],
         *args: P.args,
-        after: float = 0.0,   # pyright: ignore
-        **kwargs: P.kwargs
+        after: float = 0.0,  # pyright: ignore
+        **kwargs: P.kwargs,
     ) -> None:
         """Schedule a thread-safe call of the function to run on the main thread after `after` seconds."""
         cast(tk.Tk, self._tkobj).after(round(1000 * after), lambda: func(*args, **kwargs))
@@ -77,7 +77,7 @@ class Application(Container):
         *,
         columns: int | None = None,
         weights: Iterable[Iterable[int]] | None = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> Iterable[Iterable[Widget]]:
         return self._frame.grid(widgets, columns=columns, weights=weights, **kwargs)
 

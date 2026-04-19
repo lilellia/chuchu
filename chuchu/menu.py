@@ -24,10 +24,7 @@ class MenuBar(Widget):
     _TK_CLASS = tk.Menu
 
     def __init__(
-        self,
-        layout: dict[str, dict[str, Callable[[], Any] | None]],
-        style: str = "window",
-        **kwargs: Any
+        self, layout: dict[str, dict[str, Callable[[], Any] | None]], style: str = "window", **kwargs: Any
     ) -> None:
         self.layout = layout
 

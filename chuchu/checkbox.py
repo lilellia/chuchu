@@ -18,7 +18,7 @@ class Checkbox(DynamicWidget[bool]):
         style: str = "window",
         checked: bool = False,
         onchange: Callable[[bool], Any] | None = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
 
         tk_kwargs = {

@@ -47,7 +47,7 @@ THEMES = {
             background="#101010",
             active_background="#080808",
             active_foreground="#a0a0a0",
-            relief="flat"
+            relief="flat",
         ),
         primary=Style(
             foreground="#000000",

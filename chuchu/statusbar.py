@@ -1,9 +1,8 @@
-from collections.abc import Callable
 import sys
 import tkinter as tk
 import tkinter.font
 from tkinter import ttk
-from typing import Any, cast, TYPE_CHECKING
+from typing import Any
 
 if sys.version_info >= (3, 12):
     from typing import override
@@ -12,35 +11,7 @@ else:
 
 from chuchu.theming import active_theme
 
-if TYPE_CHECKING:
-    # This needs to be in TYPE_CHECKING because we use it here as just a type hint in Label.bind,
-    # but Container.form needs Label at runtime
-    from chuchu.widget import Container
-
-from chuchu.text_widget import TextWidget
-
-
-class Label(TextWidget):
-    _TK_CLASS = tk.Label
-
-    def __init__(
-        self,
-        text: str = "",
-        *,
-        style: str = "window",
-        onchange: Callable[[str], Any] | None = None,
-        **kwargs: Any
-    ) -> None:
-        super().__init__(text=text, value=text, style=style, onchange=onchange, **kwargs)
-
-    @property
-    def text(self) -> str:
-        return cast(str, self.tkget("text"))
-
-    @text.setter
-    def text(self, text: str, /) -> None:
-        self._value = text
-        self.tkset(text=text)
+from chuchu.widget import Container, Label
 
 
 class StatusBar(Label):

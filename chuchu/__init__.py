@@ -2,15 +2,14 @@
 from .widget import Widget, Container
 
 # "middlelayer widgets"
-from .widget import DynamicWidget
-from .text_widget import TextWidget
+from .widget import DynamicWidget, TextWidget
 
 # "concrete" widgets
 from .button import Button
 from .checkbox import Checkbox
 from .dropdown import Dropdown
 from .frame import Frame
-from .label import Label
+from .widget import Label
 from .progressbar import ProgressBar
 from .slider import Slider
 from .textbox import Textbox

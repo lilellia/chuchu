@@ -16,11 +16,7 @@ class Frame(Container):
     _TK_CLASS = tk.Frame
 
     def __init__(
-        self,
-        *,
-        style: str | None = "window",
-        tk_kwargs: MutableMapping[str, Any] | None = None,
-        **kwargs: Any
+        self, *, style: str | None = "window", tk_kwargs: MutableMapping[str, Any] | None = None, **kwargs: Any
     ) -> None:
         super().__init__(tk_kwargs=tk_kwargs, style=style, **kwargs)
 

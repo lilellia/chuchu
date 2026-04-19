@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v0.2.5
+
+- Reverts `TextWidget` move and instead moves `Label` into `widget.py`.
+
 ## v0.2.4
 
 - Re-adds `onchange` support to `Button`.

@@ -31,7 +31,6 @@ class Dropdown(DynamicWidget[str]):
     # When multiselect=False, every will point to the same StringVar
     _varmap: dict[str, tk.StringVar]
 
-
     def __init__(
         self,
         options: Iterable[str],
@@ -41,7 +40,7 @@ class Dropdown(DynamicWidget[str]):
         style: str | None = "default",
         multiselect: bool = False,
         tk_kwargs: MutableMapping[str, Any] | None = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         super().__init__(
             tk_kwargs=tk_kwargs,
@@ -50,7 +49,7 @@ class Dropdown(DynamicWidget[str]):
             options=options,
             value=value,
             blank_text=blank_text,
-            **kwargs
+            **kwargs,
         )
 
     @override
@@ -164,7 +163,7 @@ class Dropdown(DynamicWidget[str]):
             # If any options exist, there's only one var object since this is the select-one situation,
             # so we'll just return whatever option it's pointing to.
 
-            if (s := var.get()):
+            if s := var.get():
                 # One option is selected
                 return (s,)
             else:
@@ -201,7 +200,6 @@ class Dropdown(DynamicWidget[str]):
     def value(self) -> str:
         return super().value
 
-
     @value.setter
     @override
     def value(self, value: str, /) -> None:
@@ -210,7 +208,7 @@ class Dropdown(DynamicWidget[str]):
         # If any of the individual options contain commas, then this isn't reliable.
         # Just... feel free to *read* Dropdown.value, but *set* Dropdown.selected.
         # Dropdown.value.setter is provided purely for compliance with the DynamicWidget interface.
-        if (have_commas := [opt for opt in self.options if "," in opt]):
+        if have_commas := [opt for opt in self.options if "," in opt]:
             msg = (
                 f"Options {have_commas} have commas, so setting Dropdown.value may not work as expected. "
                 "Use Dropdown.selected = ... instead."

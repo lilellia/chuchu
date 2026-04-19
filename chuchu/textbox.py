@@ -2,7 +2,7 @@ from collections.abc import Callable
 import tkinter as tk
 from typing import Any
 
-from chuchu.text_widget import TextWidget
+from chuchu.widget import TextWidget
 
 
 class Textbox(TextWidget):
@@ -14,7 +14,7 @@ class Textbox(TextWidget):
         *,
         validator: Callable[[str], bool] | None = None,
         onchange: Callable[[str], Any] | None = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         super().__init__(text=text, validator=validator, value=text, onchange=onchange, **kwargs)
 

@@ -3,7 +3,7 @@ from functools import wraps
 import tkinter as tk
 from typing import Any, TypeVar, cast
 
-from chuchu.text_widget import TextWidget
+from chuchu.widget import TextWidget
 
 
 T = TypeVar("T")
@@ -23,7 +23,7 @@ class Button(TextWidget):
         tk_kwargs: MutableMapping[str, Any] | None = None,
         onclick: Callable[[], T] | None = None,
         onchange: Callable[[str], Any] | None = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         if tk_kwargs is None:
             tk_kwargs = {}
@@ -38,13 +38,7 @@ class Button(TextWidget):
             tk_kwargs["command"] = wrapper
 
         super().__init__(
-            text=text,
-            style=style,
-            value=text,
-            onclick=onclick,
-            onchange=onchange,
-            tk_kwargs=tk_kwargs,
-            **kwargs
+            text=text, style=style, value=text, onclick=onclick, onchange=onchange, tk_kwargs=tk_kwargs, **kwargs
         )
 
     @property

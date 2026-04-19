@@ -15,7 +15,6 @@ else:
     from typing_extensions import override
 
 
-from chuchu.label import Label
 from chuchu.ltypes import Tk, TkVar, TypeTkWidget
 from chuchu.theming import active_theme
 
@@ -27,11 +26,7 @@ class Widget:
     _TK_CLASS: ClassVar[TypeTkWidget]
 
     def __init__(
-        self,
-        *,
-        style: str | None = None,
-        tk_kwargs: MutableMapping[str, Any] | None = None,
-        **kwargs: Any
+        self, *, style: str | None = None, tk_kwargs: MutableMapping[str, Any] | None = None, **kwargs: Any
     ) -> None:
         self._tkobj: tk.Tk | tk.Widget | ttk.Widget | None = None
         self._tk_kwargs = tk_kwargs or {}
@@ -276,3 +271,53 @@ class TWidget(Widget, ABC):
     @abstractmethod
     def apply_style(self) -> None:
         pass
+
+
+class TextWidget(DynamicWidget[str]):
+    _TKVAR_CLASS = tk.StringVar
+    _TKVAR_NAME = "textvariable"
+
+    def __init__(
+        self,
+        text: str = "",
+        *,
+        style: str | None = None,
+        tk_kwargs: MutableMapping[str, Any] | None = None,
+        **kwargs: Any,
+    ) -> None:
+        if tk_kwargs is None:
+            tk_kwargs = {}
+
+        tk_kwargs.setdefault("text", text)
+
+        super().__init__(style=style, tk_kwargs=tk_kwargs, **kwargs)
+        self._text = text
+
+    @property
+    def text(self) -> str:
+        return self.value
+
+    @text.setter
+    def text(self, text: str, /) -> None:
+        self.value = text
+
+    def __str__(self) -> str:
+        return self.text
+
+
+class Label(TextWidget):
+    _TK_CLASS = tk.Label
+
+    def __init__(
+        self, text: str = "", *, style: str = "window", onchange: Callable[[str], Any] | None = None, **kwargs: Any
+    ) -> None:
+        super().__init__(text=text, value=text, style=style, onchange=onchange, **kwargs)
+
+    @property
+    def text(self) -> str:
+        return cast(str, self.tkget("text"))
+
+    @text.setter
+    def text(self, text: str, /) -> None:
+        self._value = text
+        self.tkset(text=text)
