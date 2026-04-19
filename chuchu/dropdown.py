@@ -18,6 +18,11 @@ class Dropdown(DynamicWidget[str]):
     _TK_CLASS = tk.Menubutton
     _TKVAR_CLASS = tk.StringVar
 
+    # We set _TKVAR_NAME to the empty string to bypass DynamicWidget's automatic binding of the variable
+    # to the underlying tkobj. This is because tk.Menubutton doesn't support a bound variable.
+    # We'll handle the variable ourselves.
+    _TKVAR_NAME = ""
+
     _master: Container | None = None
     _options: tuple[str, ...]
     _multiselect: bool

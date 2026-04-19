@@ -157,7 +157,10 @@ class DynamicWidget(Widget, Generic[T]):
             raise ValueError(f"Cannot bind variable of {type(self).__name__} to unbound parent {master!r}")
 
         self._var = self._TKVAR_CLASS(master._tkobj, self.value)
-        kwargs[self._TKVAR_NAME] = self._var
+
+        if self._TKVAR_NAME:
+            kwargs[self._TKVAR_NAME] = self._var
+
         super().bind(master, **kwargs)
 
         # This looks silly, but if an onchange was registered, it won't be hooked into the trace yet,

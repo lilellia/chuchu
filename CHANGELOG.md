@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v0.2.9
+
+- Allow `DynamicWidget[T]` to skip binding the underlying `tk.Variable`
+
 ## v0.2.8
 
 - Corrects access of `Dropdown._varmap`.
