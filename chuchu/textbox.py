@@ -2,7 +2,7 @@ from collections.abc import Callable
 import tkinter as tk
 from typing import Any
 
-from chuchu.widget import TextWidget
+from chuchu.text_widget import TextWidget
 
 
 class Textbox(TextWidget):

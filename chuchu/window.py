@@ -51,13 +51,15 @@ class Application(Container):
 
         self.apply_style()
 
-    #                | this type ignore is because mypy won't allow arguments after P.args
-    #                ↓ but `after` fundamentally doesn't belong to `func`, so... :shrug:
+    #              | This type ignore is because mypy won't allow arguments after P.args
+    #              | but `after` fundamentally doesn't belong to `func`, so... :shrug:
+    #              | The `pyright: ignore` is the same thing, but mypy flags the `def` line
+    #              ↓ whereas pyright flags the line where the parameter is defined.
     def dispatch(  # type: ignore[valid-type]
         self,
         func: Callable[P, R],
         *args: P.args,
-        after: float = 0.0,
+        after: float = 0.0,   # pyright: ignore
         **kwargs: P.kwargs
     ) -> None:
         """Schedule a thread-safe call of the function to run on the main thread after `after` seconds."""

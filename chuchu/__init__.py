@@ -1,5 +1,9 @@
 # "abstract" widgets
-from .widget import Widget, Container, TextWidget
+from .widget import Widget, Container
+
+# "middlelayer widgets"
+from .widget import DynamicWidget
+from .text_widget import TextWidget
 
 # "concrete" widgets
 from .button import Button
@@ -19,6 +23,7 @@ from .ltypes import Size, Position
 __all__ = [
     "Widget",
     "Container",
+    "DynamicWidget",
     "TextWidget",
     "Button",
     "Checkbox",

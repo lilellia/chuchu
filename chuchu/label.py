@@ -3,7 +3,7 @@ import sys
 import tkinter as tk
 import tkinter.font
 from tkinter import ttk
-from typing import Any, TYPE_CHECKING
+from typing import Any, cast, TYPE_CHECKING
 
 if sys.version_info >= (3, 12):
     from typing import override
@@ -13,9 +13,11 @@ else:
 from chuchu.theming import active_theme
 
 if TYPE_CHECKING:
+    # This needs to be in TYPE_CHECKING because we use it here as just a type hint in Label.bind,
+    # but Container.form needs Label at runtime
     from chuchu.widget import Container
 
-from chuchu.widget import TextWidget
+from chuchu.text_widget import TextWidget
 
 
 class Label(TextWidget):
@@ -33,7 +35,7 @@ class Label(TextWidget):
 
     @property
     def text(self) -> str:
-        return self.tkget("text")
+        return cast(str, self.tkget("text"))
 
     @text.setter
     def text(self, text: str, /) -> None:
