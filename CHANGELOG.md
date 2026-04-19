@@ -3,6 +3,7 @@
 ## v0.2.\*
 
 - Allow `DynamicWidget[T]` to skip binding the underlying `tk.Variable` (v0.2.9).
+- Corrects update logic for `Dropdown` (v0.2.12).
 - Corrects access of `Dropdown._onchange` (v0.2.10), `Dropdown._varmap` (v0.2.8), `Dropdown.multiselect` (v0.2.6)
 - `Dropdown.__init__` now takes `selected: Iterable[str] | None = None` instead of `value: str = ""` (v0.2.7).
 - Re-adds `onchange` support on `Button` (v0.2.4).

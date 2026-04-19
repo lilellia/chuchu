@@ -104,12 +104,12 @@ class Dropdown(DynamicWidget[str]):
 
         # We'll need a function to automatically bind the selected options as the button text.
         def _update(*_: str) -> None:
-            self.tkset(text=self.value)
-
             # Force-update self._var/self._value and trigger the onchange.
             if self._var:
                 self._var.set(self.value)
+
             self._value = self.value
+            self.tkset(text=self.value)
 
         # Add all of the options to the menu
         if self.multiselect:
