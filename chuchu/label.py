@@ -3,7 +3,7 @@ import sys
 import tkinter as tk
 import tkinter.font
 from tkinter import ttk
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 if sys.version_info >= (3, 12):
     from typing import override
@@ -11,7 +11,9 @@ else:
     from typing_extensions import override
 
 from chuchu.theming import active_theme
-from chuchu.widget import Container, TextWidget
+
+if TYPE_CHECKING:
+    from chuchu.widget import Container, TextWidget
 
 
 class Label(TextWidget):

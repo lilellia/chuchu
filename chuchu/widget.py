@@ -6,7 +6,7 @@ import itertools
 import sys
 import tkinter as tk
 from tkinter import ttk
-from typing import Any, ClassVar, Generic, NamedTuple, TypeVar, cast, TYPE_CHECKING
+from typing import Any, ClassVar, Generic, NamedTuple, TypeVar, cast
 
 
 if sys.version_info >= (3, 12):
@@ -15,9 +15,7 @@ else:
     from typing_extensions import override
 
 
-if TYPE_CHECKING:
-    from chuchu.label import Label
-
+from chuchu.label import Label
 from chuchu.ltypes import Tk, TkVar, TypeTkWidget
 from chuchu.theming import active_theme
 

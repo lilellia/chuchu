@@ -4,6 +4,8 @@ from .widget import Widget, Container, TextWidget
 # "concrete" widgets
 from .button import Button
 from .checkbox import Checkbox
+from .dropdown import Dropdown
+from .frame import Frame
 from .label import Label
 from .progressbar import ProgressBar
 from .slider import Slider
@@ -20,6 +22,8 @@ __all__ = [
     "TextWidget",
     "Button",
     "Checkbox",
+    "Dropdown",
+    "Frame",
     "Label",
     "ProgressBar",
     "Slider",
