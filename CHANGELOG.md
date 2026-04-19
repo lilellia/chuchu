@@ -4,6 +4,7 @@
 
 - Adds widgets:
     - `Checkbox`
+    - `Dropdown`
     - `MenuBar`, accessible via `Application().set_menubar`.
     - `StatusBar`, accessible via `Application().status = ...`.
 - Adds `Widget.defer_set` as an alias of `lambda: w.tkset(**kwargs)`.
