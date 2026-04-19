@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v0.2.6
+
+- Corrects access of `Dropdown.multiselect`.
+
 ## v0.2.5
 
 - Reverts `TextWidget` move and instead moves `Label` into `widget.py`.

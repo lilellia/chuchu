@@ -19,7 +19,7 @@ class Dropdown(DynamicWidget[str]):
 
     _master: Container | None = None
     _options: tuple[str, ...]
-    _multiselect: bool
+    _multiselect: bool = False
     _blank_text: str
 
     # self._tkobj will be the tk.Menubutton object
