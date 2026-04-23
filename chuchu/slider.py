@@ -63,8 +63,11 @@ class Slider(DynamicWidget[float], TWidget):
                 return res
 
             tk_kwargs["command"] = kwargs["onchange"] = wrapper
+        
+        else:
+            kwargs["onchange"] = None
 
-        super().__init__(tk_kwargs=tk_kwargs, style=style, onchange=onchange, **kwargs)
+        super().__init__(tk_kwargs=tk_kwargs, style=style, **kwargs)
         self._value = value
 
     @override
