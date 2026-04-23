@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 0.3.1
+
+- Fixes `Slider.onchange`.
+
 ## 0.3.0
 
 - Adds `ImageWidget`.
