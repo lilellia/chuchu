@@ -9,6 +9,7 @@ from .button import Button
 from .checkbox import Checkbox
 from .dropdown import Dropdown
 from .frame import Frame
+from .images import ImageWidget
 from .widget import Label
 from .progressbar import ProgressBar
 from .slider import Slider

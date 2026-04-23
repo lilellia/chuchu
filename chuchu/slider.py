@@ -1,6 +1,8 @@
 from collections.abc import Callable
 from functools import wraps
 import sys
+import tkinter as tk
+
 from tkinter import ttk
 from typing import Any, TypeVar
 
@@ -17,6 +19,7 @@ T = TypeVar("T")
 
 class Slider(DynamicWidget[float], TWidget):
     _TK_CLASS = ttk.Scale
+    _TKVAR_CLASS = tk.DoubleVar
 
     minimum: float
     maximum: float

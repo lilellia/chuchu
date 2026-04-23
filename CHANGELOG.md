@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 0.3.0
+
+- Adds `ImageWidget`.
+
 ## v0.2.\*
 
 - Allow `DynamicWidget[T]` to skip binding the underlying `tk.Variable` (v0.2.9).
